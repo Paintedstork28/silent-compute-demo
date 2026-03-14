@@ -1099,7 +1099,7 @@ const Dashboard = ({ mode, onLogout }) => {
                   Data Enrichment — click to run
                 </div>
 
-                {EXAMPLE_QUERIES.filter(q => q.id !== 'q6').map(q => {
+                {EXAMPLE_QUERIES.filter(q => !['q6','q7','q8'].includes(q.id)).map(q => {
                   const open = selQuery?.id === q.id;
                   return (
                     <div key={q.id} style={{marginBottom:10}}>
