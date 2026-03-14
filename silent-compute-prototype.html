@@ -381,7 +381,7 @@ const Login = ({ onLogin }) => {
     const badgeColor= isSandbox ? 'emerald' : 'indigo';
     const badgeText = isSandbox ? 'Active' : 'Production';
     return (
-      <button onClick={() => { setMode(m); setErr(''); }}
+      <button onClick={() => { setMode(m); setErr(''); if(m==='sandbox'){setUser('admin');setPass('admin');}else{setUser('hdfc@silentelabs.io');setPass('hdfc-2026');} }}
         style={{padding:16, borderRadius:14, border:`1px solid ${borderCol}`, background:bgCol,
           textAlign:'left', cursor:'pointer', transition:'all .15s', width:'100%'}}>
         <div style={{display:'flex', justifyContent:'space-between', marginBottom:8}}>
