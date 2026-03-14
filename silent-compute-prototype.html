@@ -161,6 +161,34 @@ const INIT_INBOUND = [
 ];
 
 const RATE_PER_K = 2; // ₹ per 1,000 records
+
+/* ── SL ADMIN DATA ── */
+const SL_ENTITIES = [
+  { id:'hdfc',  name:'HDFC Bank',        type:'Bank',               modules:['SC Insights','SC Guard'],  requests:9,  records:8640000,  paid:true  },
+  { id:'toi',   name:'Times of India',   type:'Publisher',          modules:['SC Insights'],             requests:4,  records:9300000,  paid:true  },
+  { id:'finvu', name:'Finvu AA',         type:'Account Aggregator', modules:['SC Insights'],             requests:6,  records:6200000,  paid:false },
+  { id:'icici', name:'ICICI Bank',       type:'Bank',               modules:['SC Guard'],                requests:3,  records:4300000,  paid:false },
+  { id:'phone', name:'PhonePe',          type:'Payments',           modules:['SC Insights'],             requests:5,  records:11000000, paid:true  },
+  { id:'rzpay', name:'Razorpay',         type:'Payments',           modules:['SC Insights'],             requests:3,  records:4200000,  paid:true  },
+  { id:'cibil', name:'CIBIL',            type:'Credit Bureau',      modules:['SC Guard'],                requests:2,  records:2500000,  paid:false },
+  { id:'navi',  name:'Navi',             type:'Digital Lender',     modules:['SC Insights'],             requests:3,  records:3100000,  paid:true  },
+  { id:'kbee',  name:'KreditBee',        type:'Digital Lender',     modules:['SC Insights'],             requests:2,  records:2200000,  paid:true  },
+  { id:'dbur',  name:'Demo Bureau',      type:'Credit Bureau',      modules:['SC Guard'],                requests:1,  records:1400000,  paid:false },
+];
+const SL_REQUESTS = [
+  { id:'SLR-0041', date:'2026-03-14', requester:'HDFC Bank',      counterparty:'SBI',             module:'SC Guard',   records:1800000, status:'computing' },
+  { id:'SLR-0040', date:'2026-03-14', requester:'CIBIL',          counterparty:'HDFC Bank',       module:'SC Guard',   records:2500000, status:'computing' },
+  { id:'SLR-0039', date:'2026-03-13', requester:'ICICI Bank',     counterparty:'Demo Bureau',     module:'SC Guard',   records:1800000, status:'completed' },
+  { id:'SLR-0038', date:'2026-03-13', requester:'PhonePe',        counterparty:'Times of India',  module:'SC Insights',records:4400000, status:'completed' },
+  { id:'SLR-0037', date:'2026-03-12', requester:'HDFC Bank',      counterparty:'Finvu AA',        module:'SC Insights',records:3100000, status:'completed' },
+  { id:'SLR-0036', date:'2026-03-10', requester:'HDFC Bank',      counterparty:'Finvu AA',        module:'SC Insights',records:2500000, status:'completed' },
+  { id:'SLR-0035', date:'2026-03-08', requester:'Navi',           counterparty:'CIBIL',           module:'SC Guard',   records:3100000, status:'completed' },
+  { id:'SLR-0034', date:'2026-03-05', requester:'Razorpay',       counterparty:'PhonePe',         module:'SC Insights',records:2100000, status:'completed' },
+  { id:'SLR-0033', date:'2026-03-01', requester:'Times of India', counterparty:'HDFC Bank',       module:'SC Insights',records:3200000, status:'completed' },
+  { id:'SLR-0032', date:'2026-02-28', requester:'HDFC Bank',      counterparty:'Hotstar',         module:'SC Insights',records:5000000, status:'completed' },
+  { id:'SLR-0031', date:'2026-02-20', requester:'KreditBee',      counterparty:'Finvu AA',        module:'SC Insights',records:2200000, status:'completed' },
+  { id:'SLR-0030', date:'2026-02-14', requester:'Times of India', counterparty:'ICICI Bank',      module:'SC Guard',   records:1800000, status:'completed' },
+];
 const CHARGES = [
   { id:'req-001', date:'2026-03-10', company:'Finvu AA',        uc:'Data Enrichment',  records:250000, status:'paid'    },
   { id:'req-002', date:'2026-03-14', company:'SBI',             uc:'Fraud Detection',  records:180000, status:'pending' },
@@ -333,6 +361,7 @@ const Login = ({ onLogin }) => {
 
   const submit = () => {
     setErr('');
+    if (user === 'sl-admin' && pass === 'sl-2026') { setBusy(true); setTimeout(() => onLogin('sl'), 1100); return; }
     if (mode === 'sandbox') {
       if (user === 'admin' && pass === 'admin') { setBusy(true); setTimeout(() => onLogin('sandbox'), 1100); }
       else setErr('Invalid credentials. Use  admin / admin  for sandbox access.');
@@ -412,6 +441,13 @@ const Login = ({ onLogin }) => {
       </div>
       <div style={{marginTop:20, fontSize:11, color:'#334155', display:'flex', alignItems:'center', gap:6}}>
         <Ico n="shield" size={12}/> End-to-end encrypted · Zero-knowledge architecture · SOC 2 Type II
+      </div>
+      <div style={{marginTop:16, borderTop:'1px solid #111d34', paddingTop:14, textAlign:'center'}}>
+        <span style={{fontSize:11, color:'#1e2d4a'}}>Silence Labs team? </span>
+        <button onClick={()=>{ setUser('sl-admin'); setPass('sl-2026'); }}
+          style={{fontSize:11, color:'#334155', background:'none', border:'none', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2}}>
+          Use platform credentials →
+        </button>
       </div>
     </div>
   );
@@ -2017,6 +2053,344 @@ const SCGuard = ({ mode, onBack }) => {
 };
 
 /* ─────────────────────────────────────────
+   SL ADMIN DASHBOARD
+───────────────────────────────────────── */
+const SLDashboard = ({ onLogout }) => {
+  const [tab, setTab]       = useState('overview');
+  const [selReq, setSelReq] = useState(null);
+
+  const amt  = (r) => Math.round((r/1000)*RATE_PER_K);
+  const fmtR = (n) => `₹${n.toLocaleString('en-IN')}`;
+
+  const totalRevenue  = SL_REQUESTS.filter(r=>r.status==='completed').reduce((s,r)=>s+amt(r.records),0);
+  const totalPending  = SL_REQUESTS.filter(r=>r.status==='computing').reduce((s,r)=>s+amt(r.records),0);
+  const insightsRev   = SL_REQUESTS.filter(r=>r.status==='completed'&&r.module==='SC Insights').reduce((s,r)=>s+amt(r.records),0);
+  const guardRev      = SL_REQUESTS.filter(r=>r.status==='completed'&&r.module==='SC Guard').reduce((s,r)=>s+amt(r.records),0);
+
+  const tabs = [
+    { id:'overview',   label:'Overview',       ico:'bar'     },
+    { id:'receivables',label:'Receivables',     ico:'credit'  },
+    { id:'entities',   label:'Entities',        ico:'users'   },
+    { id:'requests',   label:'Request Log',     ico:'activity'},
+  ];
+
+  const statusColor = s => s==='completed'?'emerald':s==='computing'?'indigo':'amber';
+
+  return (
+    <div style={{minHeight:'100vh', background:'#070d1a', display:'flex', flexDirection:'column'}}>
+
+      {/* topbar */}
+      <header style={{background:'#0a0f1e', borderBottom:'1px solid #1e2d4a', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50}}>
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <div style={{width:32,height:32,borderRadius:9,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Ico n="shield" size={15}/>
+          </div>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:'#f1f5f9',letterSpacing:'-0.01em'}}>Silent Compute</div>
+            <div style={{fontSize:10,color:'#475569',marginTop:-1}}>Platform admin · Silence Laboratories</div>
+          </div>
+          <div style={{marginLeft:8,background:'#312e8133',border:'1px solid #4f46e555',borderRadius:6,padding:'2px 8px',fontSize:10,fontWeight:700,color:'#818cf8',letterSpacing:'0.04em'}}>SL INTERNAL</div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span className="pulse" style={{width:5,height:5,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/>
+            <span style={{fontSize:11,color:'#475569'}}>{SL_ENTITIES.length} entities · {SL_REQUESTS.length} requests logged</span>
+          </div>
+          <button onClick={onLogout} style={{fontSize:12,color:'#475569',background:'none',border:'1px solid #1e2d4a',borderRadius:7,padding:'4px 10px',cursor:'pointer'}}>Sign out</button>
+        </div>
+      </header>
+
+      <div style={{display:'flex',flex:1}}>
+        {/* sidebar */}
+        <div style={{width:200,borderRight:'1px solid #1e2d4a',padding:'20px 12px',background:'#0a0f1e',flexShrink:0}}>
+          {tabs.map(t=>(
+            <button key={t.id} onClick={()=>{setTab(t.id);setSelReq(null);}}
+              style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:9,
+                background:tab===t.id?'#6366f118':'none',border:tab===t.id?'1px solid #6366f144':'1px solid transparent',
+                cursor:'pointer',marginBottom:4,textAlign:'left'}}>
+              <Ico n={t.ico} size={14} style={{color:tab===t.id?'#818cf8':'#475569'}}/>
+              <span style={{fontSize:13,color:tab===t.id?'#e2e8f0':'#64748b',fontWeight:tab===t.id?600:400}}>{t.label}</span>
+            </button>
+          ))}
+
+          <div style={{marginTop:24,paddingTop:16,borderTop:'1px solid #1e2d4a'}}>
+            <div style={{fontSize:10,color:'#334155',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10,paddingLeft:12}}>Platform health</div>
+            {[['Uptime','99.97%','#34d399'],['Avg latency','4.8s','#818cf8'],['Nodes online',SL_ENTITIES.length,'#22d3ee']].map(([l,v,c])=>(
+              <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'5px 12px',borderRadius:7}}>
+                <span style={{fontSize:11,color:'#475569'}}>{l}</span>
+                <span style={{fontSize:12,fontWeight:700,color:c}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{marginTop:16,background:'#1e1b4b22',border:'1px solid #312e8144',borderRadius:9,padding:'10px 12px'}}>
+            <div style={{fontSize:10,color:'#818cf8',fontWeight:600,marginBottom:4}}>Data access</div>
+            <div style={{fontSize:10,color:'#334155',lineHeight:1.5}}>SL never accesses computation results or raw entity data. Request log contains metadata only.</div>
+          </div>
+        </div>
+
+        <main style={{flex:1,overflowY:'auto',padding:28}}>
+
+          {/* ── OVERVIEW ── */}
+          {tab==='overview' && (
+            <div className="fade-up">
+              <div style={{marginBottom:24}}>
+                <h1 style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>Platform Overview</h1>
+                <p style={{fontSize:13,color:'#64748b'}}>Revenue and activity across all entities and modules. Computation results are not visible to SL.</p>
+              </div>
+
+              {/* KPI row */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:28}}>
+                {[
+                  { l:'Revenue collected',  v:fmtR(totalRevenue),              sub:'from completed requests',   c:'#34d399', ico:'trending' },
+                  { l:'Pending revenue',    v:fmtR(totalPending),              sub:'in-flight computations',    c:'#fbbf24', ico:'clock'    },
+                  { l:'Active entities',    v:SL_ENTITIES.length,              sub:'on the Silent Network',     c:'#818cf8', ico:'users'    },
+                  { l:'Total requests',     v:SL_REQUESTS.length,              sub:'all time',                  c:'#22d3ee', ico:'activity' },
+                ].map(({l,v,sub,c,ico})=>(
+                  <div key={l} style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:14,padding:'16px 18px'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                      <span style={{fontSize:11,color:'#475569'}}>{l}</span>
+                      <Ico n={ico} size={13} style={{color:c}}/>
+                    </div>
+                    <div style={{fontSize:22,fontWeight:800,color:c,marginBottom:3}}>{v}</div>
+                    <div style={{fontSize:11,color:'#334155'}}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* revenue by module */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:24,maxWidth:680}}>
+                {[
+                  { name:'SC Insights', rev:insightsRev, req:SL_REQUESTS.filter(r=>r.module==='SC Insights').length, color:'#6366f1', entities:SL_ENTITIES.filter(e=>e.modules.includes('SC Insights')).length },
+                  { name:'SC Guard',    rev:guardRev,    req:SL_REQUESTS.filter(r=>r.module==='SC Guard').length,    color:'#0891b2', entities:SL_ENTITIES.filter(e=>e.modules.includes('SC Guard')).length },
+                ].map(m=>(
+                  <div key={m.name} style={{background:'#0d1526',border:`1px solid ${m.color}44`,borderRadius:16,padding:20}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+                      <div style={{width:36,height:36,borderRadius:9,background:m.color+'22',border:`1px solid ${m.color}44`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        <Ico n={m.name==='SC Insights'?'bar':'shield'} size={16} style={{color:m.color}}/>
+                      </div>
+                      <span style={{fontSize:14,fontWeight:700,color:'#f1f5f9'}}>{m.name}</span>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                      {[['Revenue',fmtR(m.rev)],['Requests',m.req],['Entities',m.entities]].map(([l,v])=>(
+                        <div key={l} style={{background:'#111d34',borderRadius:9,padding:'10px 12px',textAlign:'center'}}>
+                          <div style={{fontSize:16,fontWeight:800,color:m.color}}>{v}</div>
+                          <div style={{fontSize:10,color:'#475569',marginTop:2}}>{l}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* recent requests preview */}
+              <div style={{maxWidth:760}}>
+                <div style={{fontSize:13,fontWeight:600,color:'#94a3b8',marginBottom:12}}>Recent requests</div>
+                {SL_REQUESTS.slice(0,5).map((r,i)=>(
+                  <div key={r.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid #1e2d4a22'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <span style={{fontSize:11,color:'#334155',fontFamily:'monospace',width:80}}>{r.id}</span>
+                      <span style={{fontSize:12,color:'#94a3b8'}}>{r.requester}</span>
+                      <span style={{fontSize:11,color:'#334155'}}>→</span>
+                      <span style={{fontSize:12,color:'#64748b'}}>{r.counterparty}</span>
+                      <span style={{fontSize:10,color:'#475569',background:'#111d34',padding:'2px 7px',borderRadius:5}}>{r.module}</span>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <span style={{fontSize:12,fontWeight:700,color:'#e2e8f0'}}>{fmtR(amt(r.records))}</span>
+                      <Badge color={statusColor(r.status)}>{r.status}</Badge>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={()=>setTab('requests')} style={{marginTop:12,fontSize:12,color:'#818cf8',background:'none',border:'none',cursor:'pointer',padding:0}}>View all requests →</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── RECEIVABLES ── */}
+          {tab==='receivables' && (
+            <div className="fade-up">
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:24}}>
+                <div>
+                  <h1 style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>Receivables</h1>
+                  <p style={{fontSize:13,color:'#64748b'}}>What each entity owes SL, by module. Invoiced per completed computation at ₹{RATE_PER_K} per 1,000 records.</p>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:11,color:'#475569',marginBottom:2}}>Total outstanding</div>
+                  <div style={{fontSize:22,fontWeight:800,color:'#fbbf24'}}>{fmtR(SL_ENTITIES.filter(e=>!e.paid).reduce((s,e)=>s+amt(e.records),0))}</div>
+                </div>
+              </div>
+
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:14,overflow:'hidden',maxWidth:820}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                  <thead>
+                    <tr style={{background:'#111d34'}}>
+                      {['Entity','Type','Modules','Requests','Records','Amount','Status'].map(h=>(
+                        <th key={h} style={{padding:'10px 14px',textAlign:'left',color:'#475569',fontWeight:600,fontSize:11,whiteSpace:'nowrap'}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SL_ENTITIES.sort((a,b)=>amt(b.records)-amt(a.records)).map((e,i)=>(
+                      <tr key={e.id} style={{borderTop:'1px solid #1e2d4a22',background:!e.paid?'#78350f08':i%2===0?'transparent':'#0d152608'}}>
+                        <td style={{padding:'10px 14px',color:'#e2e8f0',fontWeight:600}}>{e.name}</td>
+                        <td style={{padding:'10px 14px'}}><span style={{fontSize:10,color:'#64748b',background:'#1e2d4a',padding:'2px 7px',borderRadius:5}}>{e.type}</span></td>
+                        <td style={{padding:'10px 14px'}}>
+                          <div style={{display:'flex',gap:4}}>
+                            {e.modules.map(m=><span key={m} style={{fontSize:10,fontWeight:600,color:m==='SC Insights'?'#818cf8':'#22d3ee',background:m==='SC Insights'?'#6366f118':'#0891b218',padding:'2px 6px',borderRadius:4}}>{m}</span>)}
+                          </div>
+                        </td>
+                        <td style={{padding:'10px 14px',color:'#94a3b8',textAlign:'center'}}>{e.requests}</td>
+                        <td style={{padding:'10px 14px',color:'#64748b',fontFamily:'monospace'}}>{(e.records/1000000).toFixed(1)}M</td>
+                        <td style={{padding:'10px 14px',color:e.paid?'#94a3b8':'#fbbf24',fontWeight:700,fontFamily:'monospace'}}>{fmtR(amt(e.records))}</td>
+                        <td style={{padding:'10px 14px'}}><Badge color={e.paid?'emerald':'amber'}>{e.paid?'Paid':'Outstanding'}</Badge></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{padding:'10px 16px',borderTop:'1px solid #1e2d4a',display:'flex',justifyContent:'space-between'}}>
+                  <span style={{fontSize:11,color:'#475569'}}>{SL_ENTITIES.filter(e=>!e.paid).length} entities with outstanding balances</span>
+                  <button style={{fontSize:11,color:'#818cf8',background:'none',border:'none',cursor:'pointer'}}>Export invoices →</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── ENTITIES ── */}
+          {tab==='entities' && (
+            <div className="fade-up">
+              <div style={{marginBottom:24}}>
+                <h1 style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>Entities</h1>
+                <p style={{fontSize:13,color:'#64748b'}}>All institutions on the Silent Network. Module subscriptions and usage summary.</p>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,maxWidth:820}}>
+                {SL_ENTITIES.map(e=>(
+                  <div key={e.id} style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:14,padding:18}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:700,color:'#f1f5f9',marginBottom:3}}>{e.name}</div>
+                        <span style={{fontSize:10,color:'#64748b',background:'#1e2d4a',padding:'2px 7px',borderRadius:5}}>{e.type}</span>
+                      </div>
+                      <Dot online={true}/>
+                    </div>
+                    <div style={{display:'flex',gap:5,marginBottom:14}}>
+                      {e.modules.map(m=><span key={m} style={{fontSize:10,fontWeight:700,color:m==='SC Insights'?'#818cf8':'#22d3ee',background:m==='SC Insights'?'#6366f118':'#0891b218',border:`1px solid ${m==='SC Insights'?'#6366f144':'#0891b244'}`,padding:'3px 8px',borderRadius:5}}>{m}</span>)}
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                      {[['Requests',e.requests],['Records',(e.records/1000000).toFixed(1)+'M'],['Revenue',fmtR(amt(e.records))]].map(([l,v])=>(
+                        <div key={l} style={{background:'#111d34',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
+                          <div style={{fontSize:14,fontWeight:700,color:'#e2e8f0'}}>{v}</div>
+                          <div style={{fontSize:10,color:'#475569',marginTop:1}}>{l}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── REQUEST LOG ── */}
+          {tab==='requests' && !selReq && (
+            <div className="fade-up">
+              <div style={{marginBottom:20}}>
+                <h1 style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>Request Log</h1>
+                <p style={{fontSize:13,color:'#64748b'}}>All computation requests across the network. Metadata only — results are encrypted end-to-end and not accessible to SL.</p>
+              </div>
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:14,overflow:'hidden',maxWidth:900}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                  <thead>
+                    <tr style={{background:'#111d34'}}>
+                      {['Request ID','Date','Requesting entity','Counterparty','Module','Records','Amount','Result','Status'].map(h=>(
+                        <th key={h} style={{padding:'9px 14px',textAlign:'left',color:'#475569',fontWeight:600,fontSize:11,whiteSpace:'nowrap'}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SL_REQUESTS.map((r,i)=>(
+                      <tr key={r.id} onClick={()=>setSelReq(r)}
+                        style={{borderTop:'1px solid #1e2d4a22',background:i%2===0?'transparent':'#0d152608',cursor:'pointer'}}
+                        onMouseEnter={e=>e.currentTarget.style.background='#111d34'} onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'transparent':'#0d152608'}>
+                        <td style={{padding:'9px 14px',color:'#475569',fontFamily:'monospace',fontSize:11}}>{r.id}</td>
+                        <td style={{padding:'9px 14px',color:'#475569',fontSize:11}}>{r.date}</td>
+                        <td style={{padding:'9px 14px',color:'#e2e8f0',fontWeight:500}}>{r.requester}</td>
+                        <td style={{padding:'9px 14px',color:'#94a3b8'}}>{r.counterparty}</td>
+                        <td style={{padding:'9px 14px'}}><span style={{fontSize:10,fontWeight:700,color:r.module==='SC Insights'?'#818cf8':'#22d3ee',background:r.module==='SC Insights'?'#6366f118':'#0891b218',padding:'2px 7px',borderRadius:5}}>{r.module}</span></td>
+                        <td style={{padding:'9px 14px',color:'#64748b',fontFamily:'monospace'}}>{(r.records/1000000).toFixed(1)}M</td>
+                        <td style={{padding:'9px 14px',color:'#e2e8f0',fontWeight:700,fontFamily:'monospace'}}>{fmtR(amt(r.records))}</td>
+                        <td style={{padding:'9px 14px'}}>
+                          <span style={{fontSize:10,color:'#1e3a5f',background:'#0c1628',border:'1px solid #1e2d4a',padding:'2px 8px',borderRadius:5,fontFamily:'monospace'}}>
+                            [ENCRYPTED]
+                          </span>
+                        </td>
+                        <td style={{padding:'9px 14px'}}><Badge color={statusColor(r.status)}>{r.status}</Badge></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{padding:'10px 14px',borderTop:'1px solid #1e2d4a',fontSize:11,color:'#334155',display:'flex',alignItems:'center',gap:8}}>
+                  <Ico n="shield" size={11} style={{color:'#334155'}}/>
+                  Result fields are cryptographically sealed. SL's servers process metadata only — computation outputs go directly node-to-node.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── REQUEST DETAIL ── */}
+          {tab==='requests' && selReq && (
+            <div className="fade-up" style={{maxWidth:640}}>
+              <button onClick={()=>setSelReq(null)} style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'#64748b',background:'none',border:'none',cursor:'pointer',marginBottom:20,padding:0}}>
+                <span style={{transform:'rotate(180deg)',display:'inline-block'}}><Ico n="chevR" size={14}/></span> Back to log
+              </button>
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:18,padding:24,marginBottom:16}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:20}}>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>Request {selReq.id}</div>
+                    <div style={{fontSize:12,color:'#64748b'}}>{selReq.requester} → {selReq.counterparty} · {selReq.date}</div>
+                  </div>
+                  <Badge color={statusColor(selReq.status)}>{selReq.status}</Badge>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:20}}>
+                  {[['Module',selReq.module],['Records',(selReq.records/1000000).toFixed(1)+'M'],['Billed',fmtR(amt(selReq.records))]].map(([l,v])=>(
+                    <div key={l} style={{background:'#111d34',borderRadius:10,padding:'12px 14px',textAlign:'center'}}>
+                      <div style={{fontSize:15,fontWeight:700,color:'#e2e8f0'}}>{v}</div>
+                      <div style={{fontSize:11,color:'#475569',marginTop:2}}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* audit metadata */}
+                <div style={{background:'#111d34',border:'1px solid #1e2d4a',borderRadius:12,padding:16,marginBottom:16}}>
+                  <div style={{fontSize:12,fontWeight:600,color:'#94a3b8',marginBottom:12}}>Computation metadata</div>
+                  {[['Request ID',selReq.id],['Requesting entity',selReq.requester],['Counterparty',selReq.counterparty],['Module',selReq.module],['Records in computation',(selReq.records/1000).toLocaleString()+'K'],['Protocol','Private Set Intersection (PSI)'],['Initiated',selReq.date+' 09:15:22'],['Completed',selReq.date+' 09:15:27']].map(([l,v])=>(
+                    <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #1e2d4a22'}}>
+                      <span style={{fontSize:11,color:'#475569'}}>{l}</span>
+                      <span style={{fontSize:11,color:'#94a3b8',fontFamily:l.includes('ID')||l.includes('Records')||l.includes('Protocol')?'monospace':'inherit'}}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* encrypted result */}
+                <div style={{background:'#0a1628',border:'1px solid #1e3a5f',borderRadius:12,padding:20,textAlign:'center'}}>
+                  <div style={{width:40,height:40,borderRadius:10,background:'#111d34',border:'1px solid #1e2d4a',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 10px'}}>
+                    <Ico n="lock" size={18} style={{color:'#334155'}}/>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:700,color:'#334155',marginBottom:6}}>Computation result — not accessible</div>
+                  <div style={{fontSize:12,color:'#1e3a5f',lineHeight:1.5,marginBottom:12}}>The output of this computation was delivered directly to the authorised parties via their SC nodes. SL's coordination layer facilitated the handshake but never received or stored the result.</div>
+                  <div style={{fontFamily:'monospace',fontSize:11,color:'#1e3a5f',background:'#070d1a',border:'1px solid #1e2d4a',borderRadius:8,padding:'8px 12px',textAlign:'left',lineHeight:1.8}}>
+                    result_payload: [ENCRYPTED — AES-256-GCM]<br/>
+                    decryption_key: held by authorised parties only<br/>
+                    sl_access: NONE
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────
    ROOT
 ───────────────────────────────────────── */
 const App = () => {
@@ -2025,12 +2399,13 @@ const App = () => {
   const [newUser,setNew]    = useState(true);
 
   return <>
-    {screen==='login'          && <Login          onLogin={m=>{setMode(m); setScreen(m==='live'?'live-onboarding': newUser?'onboarding':'dashboard');}} />}
+    {screen==='login'          && <Login          onLogin={m=>{ setMode(m); setScreen(m==='sl'?'sl': m==='live'?'live-onboarding': newUser?'onboarding':'hub'); }} />}
     {screen==='onboarding'     && <Onboarding     onDone={()=>{setNew(false); setScreen('hub');}} />}
     {screen==='live-onboarding'&& <LiveOnboarding onDone={()=>setScreen('hub')} onLogout={()=>setScreen('login')} />}
     {screen==='hub'            && <ModuleHub      mode={mode} onSelect={m=>setScreen(m==='guard'?'guard':'dashboard')} onLogout={()=>setScreen('login')} />}
     {screen==='dashboard'      && <Dashboard      mode={mode} onLogout={()=>setScreen('hub')} />}
     {screen==='guard'          && <SCGuard        mode={mode} onBack={()=>setScreen('hub')} />}
+    {screen==='sl'             && <SLDashboard    onLogout={()=>setScreen('login')} />}
   </>;
 };
 
