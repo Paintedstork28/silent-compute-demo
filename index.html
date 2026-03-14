@@ -617,18 +617,22 @@ const Dashboard = ({ mode, onLogout }) => {
     <div style={{minHeight:'100vh', display:'flex', flexDirection:'column', background:'#070d1a'}}>
       {/* ── HEADER ── */}
       <header style={{background:'#0d1526', borderBottom:'1px solid #1e2d4a', padding:'10px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50}}>
-        <div style={{display:'flex', alignItems:'center', gap:16}}>
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <button onClick={onLogout} style={{display:'flex',alignItems:'center',gap:6,background:'none',border:'1px solid #1e2d4a',cursor:'pointer',padding:'5px 10px',borderRadius:8,color:'#64748b',fontSize:12}}
+            onMouseEnter={e=>e.currentTarget.style.borderColor='#334155'} onMouseLeave={e=>e.currentTarget.style.borderColor='#1e2d4a'}>
+            ← Hub
+          </button>
+          <div style={{width:1,height:18,background:'#1e2d4a'}}/>
           <div style={{display:'flex', alignItems:'center', gap:8}}>
-            <div style={{width:30,height:30,borderRadius:9,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Ico n="shield" size={15}/>
+            <div style={{width:28,height:28,borderRadius:8,background:'#6366f122',border:'1px solid #6366f144',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Ico n="bar" size={13} style={{color:'#818cf8'}}/>
             </div>
-            <span style={{fontSize:14,fontWeight:700,color:'#f1f5f9',letterSpacing:'-0.01em'}}>Silent Compute</span>
+            <span style={{fontSize:14,fontWeight:700,color:'#f1f5f9',letterSpacing:'-0.01em'}}>SC Insights</span>
           </div>
           <div style={{width:1,height:18,background:'#1e2d4a'}}/>
           <div style={{display:'flex', alignItems:'center', gap:6, fontSize:13}}>
             <Ico n="building" size={13} cls="" style={{color:'#64748b'}}/>
-            <span style={{color:'#cbd5e1'}}>{COMPANY.name}</span>
-            <span style={{color:'#334155', fontFamily:'monospace', fontSize:11}}>{COMPANY.id}</span>
+            <span style={{color:'#94a3b8'}}>{COMPANY.name}</span>
           </div>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:10}}>
@@ -643,10 +647,6 @@ const Dashboard = ({ mode, onLogout }) => {
             <Ico n={mode==='sandbox'?'zap':'unlock'} size={12}/>
             {mode==='sandbox' ? 'Sandbox' : 'Live'}
           </div>
-          <button onClick={onLogout} style={{background:'#0d1526',border:'1px solid #1e2d4a',cursor:'pointer',padding:'5px 12px',borderRadius:8,color:'#64748b',fontSize:12,display:'flex',alignItems:'center',gap:6}}
-            onMouseEnter={e=>e.currentTarget.style.borderColor='#334155'} onMouseLeave={e=>e.currentTarget.style.borderColor='#1e2d4a'}>
-            ← Hub
-          </button>
         </div>
       </header>
 
