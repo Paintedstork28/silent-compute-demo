@@ -206,70 +206,77 @@ const REVENUE = [
 ];
 
 const MY_USERS = [
-  { id:'USR-001', name:'Priya Sharma',   seg:'Metro',  city:'Mumbai',    spend:42000, matched:['Times of India','HDFC Bank'] },
+  { id:'USR-001', name:'Priya Sharma',   seg:'Metro',  city:'Mumbai',    spend:52000, matched:['Razorpay','Hotstar'] },
   { id:'USR-002', name:'Rahul Verma',    seg:'Tier-1', city:'Delhi',     spend:18000, matched:[] },
-  { id:'USR-003', name:'Anita Nair',     seg:'Metro',  city:'Bengaluru', spend:67000, matched:['Times of India'] },
+  { id:'USR-003', name:'Anita Nair',     seg:'Metro',  city:'Bengaluru', spend:67000, matched:['Razorpay','Times of India'] },
   { id:'USR-004', name:'Sanjay Mehra',   seg:'Tier-2', city:'Pune',      spend:9500,  matched:[] },
-  { id:'USR-005', name:'Deepa Krishnan', seg:'Metro',  city:'Chennai',   spend:54000, matched:['Times of India','HDFC Bank','Hotstar'] },
+  { id:'USR-005', name:'Deepa Krishnan', seg:'Metro',  city:'Chennai',   spend:88000, matched:['Razorpay','Hotstar','Times of India'] },
   { id:'USR-006', name:'Amit Bose',      seg:'Tier-1', city:'Kolkata',   spend:31000, matched:['Hotstar'] },
-  { id:'USR-007', name:'Kavya Reddy',    seg:'Metro',  city:'Hyderabad', spend:88000, matched:['Times of India','HDFC Bank'] },
+  { id:'USR-007', name:'Kavya Reddy',    seg:'Metro',  city:'Hyderabad', spend:74000, matched:['Razorpay','Times of India'] },
   { id:'USR-008', name:'Vikram Singh',   seg:'Tier-2', city:'Jaipur',    spend:12000, matched:[] },
-  { id:'USR-009', name:'Meera Patel',    seg:'Metro',  city:'Ahmedabad', spend:44000, matched:['Times of India'] },
-  { id:'USR-010', name:'Arjun Nambiar',  seg:'Tier-1', city:'Kochi',     spend:27000, matched:['Hotstar'] },
+  { id:'USR-009', name:'Meera Patel',    seg:'Metro',  city:'Ahmedabad', spend:44000, matched:['Hotstar','Times of India'] },
+  { id:'USR-010', name:'Arjun Nambiar',  seg:'Tier-1', city:'Kochi',     spend:27000, matched:['Razorpay'] },
 ];
 
 const EXAMPLE_QUERIES = [
   {
-    id:'q1', tag:'Audience Match', color:'#6366f1',
-    q:'Which of my users overlap with the Times of India audience?',
+    id:'q1', tag:'Spend Behaviour', color:'#6366f1',
+    q:'How many of my customers made transactions above ₹10,000 on Razorpay in the last 30 days?',
+    why:'Inference: These are high-intent digital spenders. Prime targets for a premium HDFC credit card with online cashback — they already spend big online and are likely underserved by their current card limit.',
     steps:[
-      { n:1, party:'Times of India', type:'PSI', desc:'Your user IDs are matched against TOI\'s logged-in base. TOI never sees your IDs; you never see theirs.', result:'47,832 matched', time:'4.2s', hash:'0x7f3a9c2b...e4d1f8a0' }
+      { n:1, party:'Razorpay', type:'Secure Aggregate', desc:'Count of your customers who transacted above ₹10,000 on Razorpay in the last 30 days. Razorpay never receives your customer list — only a cryptographic match signal per user.', result:'1,14,280 customers matched', time:'3.8s', hash:'0x7f3a9c2b...e4d1f8a0' }
     ],
-    stats:[['Users matched','47,832','#f1f5f9'],['Match rate','19.1%','#818cf8'],['Compute time','4.2s','#34d399']],
-    filter: u => u.matched.includes('Times of India'),
-    dist:[['Metro',58],['Tier-1',28],['Tier-2',14]], distLabel:'Segment split of matched users',
+    stats:[['High-spend Razorpay users','1,14,280','#f1f5f9'],['% of your base','45.7%','#818cf8'],['Avg transaction value','₹24,600','#34d399']],
+    filter: u => u.matched.includes('Razorpay'),
+    dist:[['₹10K–25K',48],['₹25K–50K',31],['₹50K–1L',14],['> ₹1L',7]], distLabel:'Transaction size breakdown',
   },
   {
-    id:'q2', tag:'Chained Query', color:'#0891b2',
-    q:'Of those TOI-overlapping users, how many bought an HDFC product in the last 30 days?',
+    id:'q2', tag:'OTT & Lifestyle', color:'#8b5cf6',
+    q:'How many of my savings account holders also have an active OTT premium subscription?',
+    why:'Inference: OTT subscribers are digitally active and comfortable with recurring payments. Strong fit for an HDFC co-branded entertainment card or an EMI offer on device upgrades — they already pay for premium digital products.',
     steps:[
-      { n:1, party:'Times of India', type:'PSI',              desc:'Identify the overlapping cohort between your base and TOI.', result:'47,832 in overlap', time:'4.2s', hash:'0x7f3a9c2b...e4d1f8a0' },
-      { n:2, party:'HDFC Bank',      type:'Secure Aggregate', desc:'Count of HDFC product purchases within that cohort only. HDFC receives no user identifiers.', result:'12,241 purchasers (25.6%)', time:'3.1s', hash:'0x4a2d1e7f...8c3b5a21' }
+      { n:1, party:'Hotstar', type:'PSI',              desc:'Match your savings account holders against Hotstar\'s active premium subscriber base.', result:'68,412 matched', time:'5.1s', hash:'0x9c3e2a1d...4f7b2c0e' },
+      { n:2, party:'Netflix', type:'PSI',              desc:'Match the same cohort against Netflix active subscribers. Neither platform sees your customer list.', result:'Additional 29,340 unique matches', time:'4.4s', hash:'0x2b4f8c1e...7d3a9e05' }
     ],
-    stats:[['HDFC buyers in overlap','12,241','#f1f5f9'],['% of TOI overlap','25.6%','#22d3ee'],['Total compute time','7.3s','#34d399']],
-    filter: u => u.matched.includes('HDFC Bank'),
-    dist:[['Credit card',44],['Personal loan',31],['FD / savings',25]], distLabel:'HDFC product type breakdown',
-  },
-  {
-    id:'q3', tag:'Income Insights', color:'#8b5cf6',
-    q:'What is the income bracket of users who overlap with the Hotstar audience?',
-    steps:[
-      { n:1, party:'Hotstar',  type:'PSI',              desc:'Match your user base with Hotstar\'s subscriber list.', result:'31,400 matched', time:'5.8s', hash:'0x9c3e2a1d...4f7b2c0e' },
-      { n:2, party:'Finvu AA', type:'Secure Aggregate', desc:'Aggregate income bracket distribution across the matched cohort. Finvu receives no identifiers — only the cohort mask.', result:'Income distribution computed', time:'6.7s', hash:'0x2b4f8c1e...7d3a9e05' }
-    ],
-    stats:[['Hotstar overlap','31,400','#f1f5f9'],['Dominant bracket','₹10–20L','#818cf8'],['Compute time','12.5s','#34d399']],
+    stats:[['Active OTT subscribers','97,752','#f1f5f9'],['% of savings base','39.1%','#818cf8'],['On 2+ platforms','28,340','#34d399']],
     filter: u => u.matched.includes('Hotstar'),
-    dist:[['< ₹5L',12],['₹5–10L',28],['₹10–20L',38],['₹20L+',22]], distLabel:'Income bracket of matched users',
+    dist:[['Hotstar only',42],['Netflix only',18],['Both',29],['Other OTT',11]], distLabel:'OTT platform breakdown',
   },
   {
-    id:'q4', tag:'AML / Fraud', color:'#ef4444',
-    q:'Are any of my users flagged on a fraud or sanctions watchlist?',
+    id:'q3', tag:'Upsell Opportunity', color:'#0891b2',
+    q:'Which of my salary account holders earning above ₹1.5L/month have not yet upgraded to a premium credit card?',
+    why:'Inference: High earners still on basic products are your lowest-hanging upsell. They have the income to qualify for a Regalia or Infinia card — they just haven\'t been targeted with the right offer yet.',
     steps:[
-      { n:1, party:'Demo Bureau', type:'PSI', desc:'Your user PAN / phone is privately matched against the bureau\'s watchlist. The bureau sees no names or account details — only a cryptographic match signal.', result:'23 users flagged', time:'2.8s', hash:'0x1d5a3b7e...c2e4f091' }
+      { n:1, party:'Finvu AA', type:'Secure Aggregate', desc:'Identify customers whose monthly salary credit exceeds ₹1.5L. Finvu never sees account details — only returns a count and cohort mask.', result:'42,180 customers above threshold', time:'6.2s', hash:'0x4a2d1e7f...8c3b5a21' },
+      { n:2, party:'HDFC Internal', type:'Secure Filter', desc:'Cross-reference against customers already holding a premium card. Filtered entirely within your own node — no external party involved.', result:'31,440 without premium card (74.5%)', time:'1.1s', hash:'0x1e3f9c2a...5d7b4e08' }
     ],
-    stats:[['Flagged users','23','#f87171'],['Flag rate','0.009%','#fbbf24'],['Compute time','2.8s','#34d399']],
-    filter: u => false,
-    dist:[['High risk',3],['Medium risk',8],['Low risk',12]], distLabel:'Risk tier of flagged users',
+    stats:[['High earners identified','42,180','#f1f5f9'],['Without premium card','31,440','#22d3ee'],['Estimated upgrade revenue','₹6.2Cr/yr','#34d399']],
+    filter: u => u.spend > 40000,
+    dist:[['₹1.5–2L salary',52],['₹2–3L salary',31],['₹3L+ salary',17]], distLabel:'Salary band of upsell targets',
   },
   {
-    id:'q5', tag:'Gap Analysis', color:'#f59e0b',
-    q:'Which of my high-spend users are NOT yet in the ICICI credit card base — potential upsell targets?',
+    id:'q4', tag:'Audience Affinity', color:'#f59e0b',
+    q:'Of my credit card customers, how many are frequent food delivery users — ordering 8+ times a month?',
+    why:'Inference: Heavy food delivery users spend ₹3,000–8,000/month on Swiggy and Zomato alone. A targeted dining cashback card offer — or a limited-time 10% cashback on food apps — would have high conversion and visible spend lift.',
     steps:[
-      { n:1, party:'ICICI Bank', type:'PSI', desc:'Find which users already hold an ICICI credit card vs those who don\'t. ICICI never sees your full list.', result:'8,441 already customers · 191,559 new prospects', time:'3.9s', hash:'0x6e2c9a4f...1b8d3c72' }
+      { n:1, party:'Swiggy',  type:'Secure Aggregate', desc:'Count of your credit card customers who placed 8 or more orders on Swiggy in the last 30 days.', result:'38,210 customers matched', time:'3.3s', hash:'0x6e2c9a4f...1b8d3c72' },
+      { n:2, party:'Zomato',  type:'Secure Aggregate', desc:'Same computation against Zomato\'s order base. Neither platform receives customer identifiers.', result:'Additional 21,890 unique customers', time:'3.1s', hash:'0x8f1d4b2e...3c9a7f01' }
     ],
-    stats:[['New prospects identified','191,559','#f1f5f9'],['Already ICICI customers','8,441','#475569'],['High-spend new prospects','12,340','#34d399']],
-    filter: u => !u.matched.includes('HDFC Bank') && u.spend > 20000,
-    dist:[['Spend > ₹50K',28],['₹20–50K',41],['< ₹20K',31]], distLabel:'Spend tier of prospect pool',
+    stats:[['Frequent food delivery users','60,100','#f1f5f9'],['Avg monthly food spend','₹4,800','#fbbf24'],['On both platforms','18,340','#34d399']],
+    filter: u => u.matched.includes('Razorpay'),
+    dist:[['8–12 orders/month',44],['13–20 orders/month',36],['20+ orders/month',20]], distLabel:'Order frequency breakdown',
+  },
+  {
+    id:'q5', tag:'Churn Risk', color:'#ef4444',
+    q:'How many of my customers who are not using their HDFC credit card are actively transacting on a competitor card?',
+    why:'Inference: Dormant HDFC card holders who are active on competitor cards are about to churn — or already have. A targeted reactivation offer (bonus reward points, fee waiver) sent now is far cheaper than winning them back later.',
+    steps:[
+      { n:1, party:'Razorpay',   type:'Secure Aggregate', desc:'Identify HDFC customers with zero HDFC card transactions in 60 days who are actively transacting on Razorpay — indicating competitor card usage.', result:'22,410 active on competitor cards', time:'4.1s', hash:'0x3b7e1f9d...2a4c8e05' },
+      { n:2, party:'Times of India', type:'PSI',          desc:'Overlay with TOI\'s engaged reader base to identify which dormant customers are high-value enough to target with a reactivation campaign.', result:'14,280 high-value dormant users', time:'3.6s', hash:'0x5c2a8f1b...7e3d9c04' }
+    ],
+    stats:[['Dormant but active elsewhere','22,410','#f87171'],['High-value segment','14,280','#fbbf24'],['Reactivation potential','₹3.8Cr/yr','#34d399']],
+    filter: u => u.matched.includes('Times of India'),
+    dist:[['Dormant 30–60 days',38],['Dormant 60–90 days',34],['Dormant 90+ days',28]], distLabel:'Dormancy period breakdown',
   },
 ];
 
@@ -1068,6 +1075,15 @@ const Dashboard = ({ mode, onLogout }) => {
                                 <div style={{fontSize:11,color:'#475569',marginTop:2}}>{l}</div>
                               </div>
                             ))}
+                          </div>
+
+                          {/* inference callout */}
+                          <div style={{background:'#0f1f0f',border:'1px solid #16a34a44',borderRadius:12,padding:14,marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+                            <Ico n="trending" size={13} style={{color:'#34d399',flexShrink:0,marginTop:1}}/>
+                            <div>
+                              <div style={{fontSize:11,fontWeight:700,color:'#34d399',marginBottom:4,textTransform:'uppercase',letterSpacing:'0.06em'}}>What this tells you</div>
+                              <div style={{fontSize:12,color:'#64748b',lineHeight:1.6}}>{q.why}</div>
+                            </div>
                           </div>
 
                           {/* distribution bar */}
