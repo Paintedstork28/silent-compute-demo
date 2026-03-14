@@ -1938,6 +1938,123 @@ const FRAUD_PATTERNS = [
   { id:'p6', name:'Mule Account Pattern', desc:'Account receives funds from many sources and immediately withdraws in full',            count:6,  amount:'₹3.5L',  trend:0,   severity:'high',     cross:6 },
 ];
 
+const NETWORK_DATA = {
+  'USR-4471': {
+    type:'circular',
+    nodes:[
+      { id:'A', label:'USR-4471', bank:'HDFC Bank', subject:true,  x:200, y:78  },
+      { id:'B', label:'ACC-B21',  bank:'SBI',       subject:false, x:308, y:153 },
+      { id:'C', label:'ACC-C38',  bank:'Axis Bank', subject:false, x:267, y:277 },
+      { id:'D', label:'ACC-D15',  bank:'ICICI',     subject:false, x:133, y:277 },
+      { id:'E', label:'ACC-E07',  bank:'SBI',       subject:false, x:92,  y:153 },
+    ],
+    edges:[
+      { from:'A', to:'B', amount:'₹48K', ts:'Mar 14 11:42' },
+      { from:'B', to:'C', amount:'₹46K', ts:'Mar 14 09:31' },
+      { from:'C', to:'D', amount:'₹44K', ts:'Mar 13 16:10' },
+      { from:'D', to:'E', amount:'₹43K', ts:'Mar 13 11:05' },
+      { from:'E', to:'A', amount:'₹42K', ts:'Mar 12 14:22' },
+    ],
+    summary:'₹2.23L cycled across 5 accounts · 3 institutions · funds return to origin account within 48 hrs · 3 nodes detected via cross-bank MPC',
+  },
+  'USR-3351': {
+    type:'circular',
+    nodes:[
+      { id:'A', label:'USR-3351', bank:'HDFC Bank', subject:true,  x:200, y:88  },
+      { id:'B', label:'ACC-F42',  bank:'ICICI',     subject:false, x:312, y:190 },
+      { id:'C', label:'ACC-G81',  bank:'SBI',       subject:false, x:200, y:292 },
+      { id:'D', label:'ACC-H29',  bank:'Axis Bank', subject:false, x:88,  y:190 },
+    ],
+    edges:[
+      { from:'A', to:'B', amount:'₹1.2L', ts:'Mar 10' },
+      { from:'B', to:'C', amount:'₹1.1L', ts:'Mar 10' },
+      { from:'C', to:'D', amount:'₹1.1L', ts:'Mar 11' },
+      { from:'D', to:'A', amount:'₹1.0L', ts:'Mar 12' },
+    ],
+    summary:'₹4.4L cycled across 4 accounts · 3 institutions · 48-hour full cycle · ICICI, SBI, Axis nodes detected via cross-bank MPC',
+  },
+  'USR-6634': {
+    type:'smurfing',
+    nodes:[
+      { id:'X',  label:'USR-6634', bank:'HDFC Bank', subject:true,  x:200, y:238 },
+      { id:'S1', label:'ACC-S01',  bank:'SBI',       subject:false, x:36,  y:80  },
+      { id:'S2', label:'ACC-S02',  bank:'Axis Bank', subject:false, x:118, y:38  },
+      { id:'S3', label:'ACC-S03',  bank:'SBI',       subject:false, x:200, y:24  },
+      { id:'S4', label:'ACC-S04',  bank:'ICICI',     subject:false, x:282, y:38  },
+      { id:'S5', label:'ACC-S05',  bank:'Kotak',     subject:false, x:364, y:80  },
+      { id:'S6', label:'ACC-S06',  bank:'Yes Bank',  subject:false, x:382, y:162 },
+    ],
+    edges:[
+      { from:'S1', to:'X', amount:'₹9.8K', ts:'Mar 14 11:42' },
+      { from:'S2', to:'X', amount:'₹9.5K', ts:'Mar 14 11:39' },
+      { from:'S3', to:'X', amount:'₹9.2K', ts:'Mar 13 16:21' },
+      { from:'S4', to:'X', amount:'₹9.7K', ts:'Mar 13 11:05' },
+      { from:'S5', to:'X', amount:'₹9.4K', ts:'Mar 12 14:33' },
+      { from:'S6', to:'X', amount:'₹9.1K', ts:'Mar 12 09:17' },
+    ],
+    summary:'₹57.7K deposited across 6 mule accounts at 5 institutions · all deposits just below ₹10K reporting threshold · 5 external nodes identified via MPC',
+  },
+};
+
+const bkColor = b => ({'HDFC Bank':'#22d3ee','SBI':'#f59e0b','ICICI':'#a78bfa','Axis Bank':'#34d399','Kotak':'#f472b6','Yes Bank':'#818cf8','HDFC':'#22d3ee'}[b]||'#64748b');
+
+const NetworkDiagram = ({ data }) => {
+  const R = 27;
+  const W = 420, H = data.type==='smurfing' ? 295 : 368;
+  const getN = id => data.nodes.find(n => n.id === id);
+  const edgePts = (fid, tid) => {
+    const f = getN(fid), t = getN(tid);
+    const dx = t.x-f.x, dy = t.y-f.y, dist = Math.sqrt(dx*dx+dy*dy)||1;
+    const ux = dx/dist, uy = dy/dist;
+    return { x1:f.x+ux*(R+1), y1:f.y+uy*(R+1), x2:t.x-ux*(R+10), y2:t.y-uy*(R+10), mx:(f.x+t.x)/2, my:(f.y+t.y)/2, px:-uy, py:ux };
+  };
+  return (
+    <div style={{background:'#080f1e',border:'1px solid #f8717133',borderRadius:14,padding:16,marginBottom:16}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+        <span style={{fontSize:12,fontWeight:700,color:'#f87171',textTransform:'uppercase',letterSpacing:'0.05em'}}>
+          {data.type==='circular' ? '↺  Circular transaction network' : '⬇  Smurfing network'}
+        </span>
+        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:10,color:'#475569'}}>
+          <div style={{width:6,height:6,borderRadius:'50%',background:'#818cf8'}}/>
+          Cross-institution nodes detected via MPC
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',display:'block'}}>
+        <defs>
+          <marker id="arh" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <polygon points="0 0, 7 3.5, 0 7" fill="#f87171bb"/>
+          </marker>
+        </defs>
+        {data.edges.map((e,i) => {
+          const p = edgePts(e.from, e.to);
+          const lx = p.mx + p.px*14, ly = p.my + p.py*14;
+          return (
+            <g key={i}>
+              <line x1={p.x1} y1={p.y1} x2={p.x2} y2={p.y2} stroke="#f8717166" strokeWidth="1.5" markerEnd="url(#arh)"/>
+              <text x={lx} y={ly}   textAnchor="middle" fontSize="9"  fill="#f87171bb" fontWeight="600">{e.amount}</text>
+              <text x={lx} y={ly+11} textAnchor="middle" fontSize="7.5" fill="#47556999">{e.ts}</text>
+            </g>
+          );
+        })}
+        {data.nodes.map(n => {
+          const c = n.subject ? '#f87171' : bkColor(n.bank);
+          return (
+            <g key={n.id}>
+              {n.subject && <circle cx={n.x} cy={n.y} r={R+7} fill="none" stroke="#f8717133" strokeWidth="1" strokeDasharray="4,3"/>}
+              <circle cx={n.x} cy={n.y} r={R} fill={c+'1a'} stroke={c} strokeWidth={n.subject?2:1.5}/>
+              <text x={n.x} y={n.y-4} textAnchor="middle" fontSize="8.5" fontWeight="700" fill={c}>{n.label}</text>
+              <text x={n.x} y={n.y+9} textAnchor="middle" fontSize="7.5" fill="#64748b">{n.bank}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <div style={{marginTop:8,background:'#0d1526',border:'1px solid #f8717122',borderRadius:8,padding:'8px 12px',fontSize:11,color:'#94a3b8',lineHeight:1.5}}>
+        <span style={{color:'#f87171',fontWeight:600}}>⚠ </span>{data.summary}
+      </div>
+    </div>
+  );
+};
+
 /* ─────────────────────────────────────────
    MODULE HUB
 ───────────────────────────────────────── */
@@ -2314,6 +2431,9 @@ const SCGuard = ({ mode, onBack }) => {
                     })
                 }
               </div>
+
+              {/* network diagram */}
+              {NETWORK_DATA[selUser.id] && <NetworkDiagram data={NETWORK_DATA[selUser.id]} />}
 
               {/* transaction timeline */}
               <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:16,padding:20,marginBottom:16}}>
