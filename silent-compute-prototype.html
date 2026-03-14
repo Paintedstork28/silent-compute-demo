@@ -65,6 +65,7 @@ const I = {
   info:      <SVG><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></SVG>,
   credit:    <SVG><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></SVG>,
   trending:  <SVG><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></SVG>,
+  search:    <SVG><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></SVG>,
   arrowR:    <SVG><path d="M5 12h14M12 5l7 7-7 7"/></SVG>,
   okCircle:  <SVG><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></SVG>,
   xCircle:   <SVG><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></SVG>,
@@ -642,9 +643,9 @@ const Dashboard = ({ mode, onLogout }) => {
             <Ico n={mode==='sandbox'?'zap':'unlock'} size={12}/>
             {mode==='sandbox' ? 'Sandbox' : 'Live'}
           </div>
-          <button onClick={onLogout} style={{background:'none',border:'none',cursor:'pointer',padding:6,borderRadius:8,color:'#475569',display:'flex',alignItems:'center'}}
-            onMouseEnter={e=>e.currentTarget.style.background='#1e2d4a'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
-            <Ico n="logout" size={16}/>
+          <button onClick={onLogout} style={{background:'#0d1526',border:'1px solid #1e2d4a',cursor:'pointer',padding:'5px 12px',borderRadius:8,color:'#64748b',fontSize:12,display:'flex',alignItems:'center',gap:6}}
+            onMouseEnter={e=>e.currentTarget.style.borderColor='#334155'} onMouseLeave={e=>e.currentTarget.style.borderColor='#1e2d4a'}>
+            ← Hub
           </button>
         </div>
       </header>
@@ -1575,6 +1576,447 @@ const LiveOnboarding = ({ onDone, onLogout }) => {
 };
 
 /* ─────────────────────────────────────────
+   GUARD MOCK DATA
+───────────────────────────────────────── */
+const GUARD_USERS = [
+  { id:'USR-4471', name:'Manoj Tiwari',    pan:'AABPT4471K', acct:'HDFC-****2341', risk:92, status:'flagged',  source:'API',         patterns:['Smurfing','Circular'], updated:'2026-03-14' },
+  { id:'USR-2289', name:'Rekha Srinivas',  pan:'BCDRS2289M', acct:'HDFC-****8812', risk:78, status:'review',   source:'Transaction', patterns:['Layering'],           updated:'2026-03-13' },
+  { id:'USR-0934', name:'Ajay Kulkarni',   pan:'CEFAK0934P', acct:'HDFC-****5503', risk:65, status:'review',   source:'API',         patterns:['Structuring'],         updated:'2026-03-12' },
+  { id:'USR-7712', name:'Sunita Mehta',    pan:'DFGSM7712Q', acct:'HDFC-****9901', risk:41, status:'watch',    source:'Transaction', patterns:['High Velocity'],       updated:'2026-03-11' },
+  { id:'USR-3351', name:'Vikrant Bose',    pan:'EHIVB3351R', acct:'HDFC-****1123', risk:88, status:'flagged',  source:'API',         patterns:['Circular','Layering'], updated:'2026-03-10' },
+  { id:'USR-5528', name:'Priya Desai',     pan:'FIJPD5528S', acct:'HDFC-****6678', risk:12, status:'clean',    source:'Transaction', patterns:[],                      updated:'2026-03-09' },
+  { id:'USR-8890', name:'Rahul Sharma',    pan:'GJKRS8890T', acct:'HDFC-****3345', risk:55, status:'watch',    source:'API',         patterns:['High Velocity'],       updated:'2026-03-08' },
+  { id:'USR-1167', name:'Deepa Nair',      pan:'HKLDN1167U', acct:'HDFC-****7789', risk:8,  status:'clean',    source:'Transaction', patterns:[],                      updated:'2026-03-07' },
+  { id:'USR-6634', name:'Sanjay Pillai',   pan:'ILMSP6634V', acct:'HDFC-****4456', risk:95, status:'flagged',  source:'API',         patterns:['Smurfing'],            updated:'2026-03-06' },
+  { id:'USR-2201', name:'Kavitha Reddy',   pan:'JMNKR2201W', acct:'HDFC-****2212', risk:34, status:'clean',    source:'Transaction', patterns:[],                      updated:'2026-03-05' },
+];
+const FRAUD_PATTERNS = [
+  { id:'p1', name:'Smurfing',              desc:'Multiple small deposits just below reporting threshold by linked accounts',             count:11, amount:'₹4.2L',  trend:+18, severity:'critical', cross:3 },
+  { id:'p2', name:'Circular Transactions', desc:'Funds looping between a cluster of accounts with no apparent commercial purpose',        count:15, amount:'₹9.7L',  trend:+6,  severity:'critical', cross:5 },
+  { id:'p3', name:'Layering',             desc:'Rapid movement through multiple accounts to obscure origin of funds',                   count:8,  amount:'₹6.1L',  trend:-4,  severity:'high',     cross:2 },
+  { id:'p4', name:'Structuring',          desc:'Transactions deliberately split to avoid ₹10L cash transaction reporting requirement',  count:22, amount:'₹11.3L', trend:+31, severity:'high',     cross:4 },
+  { id:'p5', name:'High Velocity',        desc:'Unusually high transaction frequency from a single account within a 24-hour window',    count:34, amount:'₹2.8L',  trend:+8,  severity:'medium',   cross:1 },
+  { id:'p6', name:'Mule Account Pattern', desc:'Account receives funds from many sources and immediately withdraws in full',            count:6,  amount:'₹3.5L',  trend:0,   severity:'high',     cross:6 },
+];
+
+/* ─────────────────────────────────────────
+   MODULE HUB
+───────────────────────────────────────── */
+const ModuleHub = ({ mode, onSelect, onLogout }) => {
+  const modules = [
+    { id:'insights', name:'SC Insights',  desc:'Audience match, data enrichment, advertising analytics',  icon:'bar',    color:'#6366f1', tags:['Enrichment','Advertising','Audience Match'], active:true  },
+    { id:'guard',    name:'SC Guard',     desc:'AML, fraud detection, watchlist screening, compliance',   icon:'shield', color:'#0891b2', tags:['AML','Fraud','Watchlist','Compliance'],      active:true  },
+    { id:'consent',  name:'SC Consent',  desc:'User-consented data sharing and privacy wallet',          icon:'unlock', color:'#8b5cf6', tags:['Self-consent','Data Wallet'],               active:false },
+    { id:'pay',      name:'SC Pay',      desc:'Privacy-preserving agentic payment authorisation',        icon:'credit', color:'#f59e0b', tags:['Agentic','Payments','TSS'],                 active:false },
+  ];
+  return (
+    <div style={{minHeight:'100vh', background:'radial-gradient(ellipse at 50% 0%, #0d1a2e 0%, #070d1a 60%)', display:'flex', flexDirection:'column'}}>
+      {/* topbar */}
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px 28px', borderBottom:'1px solid #1e2d4a'}}>
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <div style={{width:34,height:34,borderRadius:9,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Ico n="shield" size={16}/>
+          </div>
+          <span style={{fontSize:16,fontWeight:700,color:'#f1f5f9',letterSpacing:'-0.02em'}}>Silent Compute</span>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <div style={{width:6,height:6,borderRadius:'50%',background:'#34d399'}} className="pulse"/>
+            <span style={{fontSize:12,color:'#475569'}}>Node online · {COMPANY.nodeId}</span>
+          </div>
+          <div style={{width:1,height:16,background:'#1e2d4a'}}/>
+          <span style={{fontSize:12,color:'#475569'}}>{COMPANY.name}</span>
+          <button onClick={onLogout} style={{fontSize:12,color:'#475569',background:'none',border:'1px solid #1e2d4a',borderRadius:7,padding:'4px 10px',cursor:'pointer'}}>Sign out</button>
+        </div>
+      </div>
+
+      <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
+        <div style={{textAlign:'center', marginBottom:48}}>
+          <div style={{fontSize:24,fontWeight:700,color:'#f1f5f9',marginBottom:8}}>Good morning, {COMPANY.name}</div>
+          <div style={{fontSize:14,color:'#475569'}}>Select a module to continue · {mode === 'sandbox' ? 'Sandbox environment' : 'Production'}</div>
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, width:'100%', maxWidth:680}}>
+          {modules.map(m => (
+            <button key={m.id} onClick={() => m.active && onSelect(m.id)}
+              style={{background:'#0d1526', border:`1px solid ${m.active ? '#1e2d4a' : '#111d34'}`,
+                borderRadius:18, padding:24, textAlign:'left', cursor: m.active ? 'pointer' : 'default',
+                opacity: m.active ? 1 : 0.45, transition:'all .15s', position:'relative'}}
+              onMouseEnter={e=>{ if(m.active) e.currentTarget.style.borderColor=m.color+'88'; }}
+              onMouseLeave={e=>{ if(m.active) e.currentTarget.style.borderColor='#1e2d4a'; }}>
+              {!m.active && <div style={{position:'absolute',top:14,right:14,fontSize:10,fontWeight:700,color:'#475569',background:'#111d34',border:'1px solid #1e2d4a',borderRadius:5,padding:'2px 8px'}}>Coming soon</div>}
+              <div style={{width:44,height:44,borderRadius:12,background:m.color+'22',border:`1px solid ${m.color}44`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
+                <Ico n={m.icon} size={20} style={{color:m.color}}/>
+              </div>
+              <div style={{fontSize:15,fontWeight:700,color:'#f1f5f9',marginBottom:6}}>{m.name}</div>
+              <div style={{fontSize:12,color:'#64748b',lineHeight:1.5,marginBottom:14}}>{m.desc}</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {m.tags.map(t=>(
+                  <span key={t} style={{fontSize:10,color:m.color,background:m.color+'18',padding:'2px 7px',borderRadius:5,fontWeight:600}}>{t}</span>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {mode==='sandbox' && (
+          <div style={{marginTop:24,background:'#1e1b4b22',border:'1px solid #4f46e555',borderRadius:12,padding:'10px 18px',display:'flex',gap:10,alignItems:'center',maxWidth:680,width:'100%'}}>
+            <Ico n="zap" size={13} style={{color:'#818cf8',flexShrink:0}}/>
+            <span style={{fontSize:12,color:'#64748b'}}>Sandbox mode — SC Insights and SC Guard are loaded with dummy data. <span style={{color:'#818cf8'}}>Your sandbox node is managed by SL.</span></span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────
+   SC GUARD
+───────────────────────────────────────── */
+const SCGuard = ({ mode, onBack }) => {
+  const [tab, setTab]         = useState('users');
+  const [selUser, setSelUser] = useState(null);
+  const [search, setSearch]   = useState('');
+  const [filter, setFilter]   = useState('all');
+
+  const riskColor = (r) => r>=80?'#f87171':r>=50?'#fbbf24':'#34d399';
+  const riskLabel = (r) => r>=80?'Critical':r>=50?'Watch':'Clean';
+  const sevColor  = (s) => s==='critical'?'red':s==='high'?'amber':'slate';
+
+  const filtered = GUARD_USERS.filter(u => {
+    const matchSearch = u.id.toLowerCase().includes(search.toLowerCase()) || u.name.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter==='all' || u.status===filter;
+    return matchSearch && matchFilter;
+  });
+
+  const tabs = [
+    { id:'users',    label:'User Database',  ico:'users'   },
+    { id:'trends',   label:'Fraud Trends',   ico:'activity'},
+    { id:'detail',   label:'Case Detail',    ico:'search'  },
+  ];
+
+  return (
+    <div style={{minHeight:'100vh', background:'#070d1a', display:'flex', flexDirection:'column'}}>
+      {/* topbar */}
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 24px', borderBottom:'1px solid #1e2d4a', background:'#0d1526'}}>
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'#475569',background:'none',border:'1px solid #1e2d4a',borderRadius:7,padding:'4px 10px',cursor:'pointer'}}>
+            ← Hub
+          </button>
+          <div style={{width:1,height:16,background:'#1e2d4a'}}/>
+          <div style={{width:30,height:30,borderRadius:8,background:'#0891b222',border:'1px solid #0891b244',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Ico n="shield" size={14} style={{color:'#22d3ee'}}/>
+          </div>
+          <div>
+            <span style={{fontSize:14,fontWeight:700,color:'#f1f5f9'}}>SC Guard</span>
+            <span style={{fontSize:11,color:'#475569',marginLeft:8}}>Anti-money laundering · Fraud detection</span>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <Badge color="cyan">Bank View</Badge>
+          <span style={{fontSize:12,color:'#475569'}}>{COMPANY.name}</span>
+        </div>
+      </div>
+
+      <div style={{display:'flex', flex:1}}>
+        {/* sidebar */}
+        <div style={{width:200,borderRight:'1px solid #1e2d4a',padding:'20px 12px',background:'#0a1120',flexShrink:0}}>
+          {tabs.map(t=>(
+            <button key={t.id} onClick={()=>{setTab(t.id); if(t.id!=='detail') setSelUser(null);}}
+              style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:9,
+                background:tab===t.id?'#0891b218':'none',border:tab===t.id?'1px solid #0891b244':'1px solid transparent',
+                cursor:'pointer',marginBottom:4,textAlign:'left'}}>
+              <Ico n={t.ico} size={14} style={{color:tab===t.id?'#22d3ee':'#475569'}}/>
+              <span style={{fontSize:13,color:tab===t.id?'#e2e8f0':'#64748b',fontWeight:tab===t.id?600:400}}>{t.label}</span>
+            </button>
+          ))}
+
+          <div style={{marginTop:24,paddingTop:16,borderTop:'1px solid #1e2d4a'}}>
+            <div style={{fontSize:10,color:'#334155',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10,paddingLeft:12}}>Live stats</div>
+            {[
+              ['Flagged users', GUARD_USERS.filter(u=>u.status==='flagged').length, '#f87171'],
+              ['Under review',  GUARD_USERS.filter(u=>u.status==='review').length,  '#fbbf24'],
+              ['Watchlist',     GUARD_USERS.filter(u=>u.status==='watch').length,   '#818cf8'],
+            ].map(([l,v,c])=>(
+              <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 12px',borderRadius:7,marginBottom:2}}>
+                <span style={{fontSize:11,color:'#475569'}}>{l}</span>
+                <span style={{fontSize:13,fontWeight:700,color:c}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {mode==='sandbox' && (
+            <div style={{marginTop:24,background:'#0c1628',border:'1px solid #1e2d4a',borderRadius:9,padding:'10px 12px'}}>
+              <div style={{fontSize:10,color:'#22d3ee',fontWeight:600,marginBottom:4}}>Sandbox data</div>
+              <div style={{fontSize:10,color:'#334155',lineHeight:1.5}}>Pre-loaded with dummy flagged users and fraud patterns. No real data.</div>
+            </div>
+          )}
+        </div>
+
+        {/* main */}
+        <main style={{flex:1,overflowY:'auto',padding:28}}>
+
+          {/* ── TAB 1: USER DATABASE ── */}
+          {tab==='users' && (
+            <div className="fade-up">
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+                <div>
+                  <h1 style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>User Database</h1>
+                  <p style={{fontSize:13,color:'#64748b'}}>All profiled users — sourced via API ingestion or post-facto transaction analysis. Fetched directly from your node.</p>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8,background:'#0c2a3422',border:'1px solid #0891b233',borderRadius:9,padding:'6px 12px'}}>
+                  <Ico n="shield" size={12} style={{color:'#22d3ee'}}/>
+                  <span style={{fontSize:11,color:'#22d3ee'}}>Data decrypted locally · SL cannot see this</span>
+                </div>
+              </div>
+
+              {/* controls */}
+              <div style={{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+                <div style={{flex:1,minWidth:200,background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:9,display:'flex',alignItems:'center',gap:8,padding:'0 12px'}}>
+                  <Ico n="search" size={13} style={{color:'#475569'}}/>
+                  <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by User ID or name…"
+                    style={{flex:1,background:'none',border:'none',outline:'none',color:'#e2e8f0',fontSize:13,padding:'9px 0'}}/>
+                </div>
+                <div style={{display:'flex',gap:6}}>
+                  {[['all','All'],['flagged','Flagged'],['review','Review'],['watch','Watch'],['clean','Clean']].map(([k,l])=>(
+                    <button key={k} onClick={()=>setFilter(k)}
+                      style={{padding:'7px 13px',borderRadius:8,border:`1px solid ${filter===k?'#0891b2':'#1e2d4a'}`,
+                        background:filter===k?'#0891b218':'#0d1526',color:filter===k?'#22d3ee':'#64748b',fontSize:12,cursor:'pointer'}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* table */}
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:14,overflow:'hidden'}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                  <thead>
+                    <tr style={{background:'#111d34'}}>
+                      {['User ID','Name','Account','Risk Score','Status','Source','Patterns','Updated',''].map(h=>(
+                        <th key={h} style={{padding:'9px 14px',textAlign:'left',color:'#475569',fontWeight:600,fontSize:11,whiteSpace:'nowrap'}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((u,i)=>(
+                      <tr key={u.id} style={{borderTop:'1px solid #1e2d4a22',background:u.status==='flagged'?'#1a05053a':i%2===0?'transparent':'#0d152608',cursor:'pointer'}}
+                        onClick={()=>{setSelUser(u); setTab('detail');}}>
+                        <td style={{padding:'9px 14px',color:'#64748b',fontFamily:'monospace',fontSize:11}}>{u.id}</td>
+                        <td style={{padding:'9px 14px',color:'#e2e8f0',fontWeight:500}}>{u.name}</td>
+                        <td style={{padding:'9px 14px',color:'#475569',fontFamily:'monospace',fontSize:11}}>{u.acct}</td>
+                        <td style={{padding:'9px 14px'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:8}}>
+                            <div style={{width:36,height:4,background:'#111d34',borderRadius:2}}>
+                              <div style={{width:`${u.risk}%`,height:'100%',borderRadius:2,background:riskColor(u.risk)}}/>
+                            </div>
+                            <span style={{fontSize:12,fontWeight:700,color:riskColor(u.risk)}}>{u.risk}</span>
+                          </div>
+                        </td>
+                        <td style={{padding:'9px 14px'}}><Badge color={u.status==='flagged'?'red':u.status==='review'?'amber':u.status==='watch'?'indigo':'emerald'}>{u.status}</Badge></td>
+                        <td style={{padding:'9px 14px'}}><span style={{fontSize:11,color:'#475569',background:'#111d34',padding:'2px 7px',borderRadius:5}}>{u.source}</span></td>
+                        <td style={{padding:'9px 14px'}}>
+                          <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                            {u.patterns.map(p=><span key={p} style={{fontSize:10,color:'#f87171',background:'#f871711a',padding:'2px 6px',borderRadius:4,fontWeight:600}}>{p}</span>)}
+                            {u.patterns.length===0 && <span style={{fontSize:11,color:'#334155'}}>—</span>}
+                          </div>
+                        </td>
+                        <td style={{padding:'9px 14px',color:'#334155',fontSize:11}}>{u.updated}</td>
+                        <td style={{padding:'9px 14px'}}><Ico n="chevR" size={13} style={{color:'#334155'}}/></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{padding:'10px 16px',borderTop:'1px solid #1e2d4a',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:11,color:'#475569'}}>{filtered.length} users · {GUARD_USERS.filter(u=>u.status!=='clean').length} require attention</span>
+                  <button style={{fontSize:11,color:'#22d3ee',background:'none',border:'none',cursor:'pointer',padding:0}}>Export for filing →</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB 2: FRAUD TRENDS ── */}
+          {tab==='trends' && (
+            <div className="fade-up">
+              <div style={{marginBottom:24}}>
+                <h1 style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>Fraud Trends</h1>
+                <p style={{fontSize:13,color:'#64748b'}}>Patterns detected in your transaction data. Cross-network signals computed via MPC — you see the count, not which other banks flagged the same.</p>
+              </div>
+
+              {/* summary row */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:28}}>
+                {[
+                  ['Total flagged users', GUARD_USERS.filter(u=>u.status==='flagged').length,        '#f87171'],
+                  ['Active patterns',     FRAUD_PATTERNS.length,                                     '#fbbf24'],
+                  ['Cross-bank signals',  FRAUD_PATTERNS.reduce((s,p)=>s+p.cross,0),                 '#818cf8'],
+                  ['Total exposure',      '₹37.6L',                                                  '#22d3ee'],
+                ].map(([l,v,c])=>(
+                  <div key={l} style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:13,padding:'14px 16px'}}>
+                    <div style={{fontSize:22,fontWeight:800,color:c,marginBottom:4}}>{v}</div>
+                    <div style={{fontSize:11,color:'#475569'}}>{l}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* pattern cards */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,maxWidth:860}}>
+                {FRAUD_PATTERNS.map(p=>(
+                  <div key={p.id} style={{background:'#0d1526',border:`1px solid ${p.severity==='critical'?'#f8717133':'#1e2d4a'}`,borderRadius:16,padding:20}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>{p.name}</div>
+                        <Badge color={sevColor(p.severity)}>{p.severity}</Badge>
+                      </div>
+                      <div style={{textAlign:'right'}}>
+                        <div style={{fontSize:22,fontWeight:800,color:p.severity==='critical'?'#f87171':p.severity==='high'?'#fbbf24':'#94a3b8'}}>{p.count}</div>
+                        <div style={{fontSize:10,color:'#475569'}}>cases</div>
+                      </div>
+                    </div>
+                    <p style={{fontSize:12,color:'#64748b',lineHeight:1.5,marginBottom:14}}>{p.desc}</p>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:12,borderTop:'1px solid #1e2d4a22'}}>
+                      <div style={{display:'flex',gap:16}}>
+                        <div>
+                          <div style={{fontSize:11,color:'#475569'}}>Amount involved</div>
+                          <div style={{fontSize:13,fontWeight:700,color:'#e2e8f0'}}>{p.amount}</div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:11,color:'#475569'}}>Cross-bank signal</div>
+                          <div style={{fontSize:13,fontWeight:700,color:'#818cf8'}}>{p.cross} other institutions</div>
+                        </div>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:4,fontSize:11,
+                        color:p.trend>0?'#f87171':p.trend<0?'#34d399':'#475569'}}>
+                        <span>{p.trend>0?'↑':p.trend<0?'↓':'→'}</span>
+                        <span>{p.trend===0?'Stable':`${Math.abs(p.trend)}% vs last month`}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* cross-network note */}
+              <div style={{marginTop:20,background:'#0a1628',border:'1px solid #1e3a5f',borderRadius:12,padding:'12px 16px',display:'flex',gap:10,alignItems:'flex-start',maxWidth:860}}>
+                <Ico n="shield" size={13} style={{color:'#22d3ee',flexShrink:0,marginTop:1}}/>
+                <div style={{fontSize:12,color:'#64748b',lineHeight:1.6}}>
+                  <strong style={{color:'#94a3b8'}}>How cross-bank signals work:</strong> When SC Guard detects a pattern in your data, it runs a silent PSI against other participating institutions. You receive a count of matches — never which institution, never their raw data. The computation runs on your node; SL's coordination layer never sees transaction details.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB 3: CASE DETAIL ── */}
+          {tab==='detail' && !selUser && (
+            <div className="fade-up" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:400,gap:16}}>
+              <div style={{width:52,height:52,borderRadius:14,background:'#111d34',border:'1px solid #1e2d4a',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Ico n="search" size={22} style={{color:'#334155'}}/>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontSize:14,fontWeight:600,color:'#475569',marginBottom:6}}>No user selected</div>
+                <div style={{fontSize:12,color:'#334155'}}>Click any user in the User Database to open their case detail</div>
+              </div>
+              <button onClick={()=>setTab('users')} style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:9,padding:'8px 18px',color:'#64748b',fontSize:13,cursor:'pointer'}}>
+                Go to User Database →
+              </button>
+            </div>
+          )}
+
+          {tab==='detail' && selUser && (
+            <div className="fade-up" style={{maxWidth:700}}>
+              <button onClick={()=>setTab('users')} style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'#64748b',background:'none',border:'none',cursor:'pointer',marginBottom:20,padding:0}}>
+                <span style={{transform:'rotate(180deg)',display:'inline-block'}}><Ico n="chevR" size={14}/></span> Back to database
+              </button>
+
+              {/* user header */}
+              <div style={{background:'#0d1526',border:`1px solid ${selUser.status==='flagged'?'#f8717133':'#1e2d4a'}`,borderRadius:18,padding:24,marginBottom:16}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+                  <div>
+                    <div style={{fontSize:18,fontWeight:700,color:'#f1f5f9',marginBottom:4}}>{selUser.name}</div>
+                    <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                      <span style={{fontSize:12,color:'#475569',fontFamily:'monospace'}}>{selUser.id}</span>
+                      <span style={{fontSize:11,color:'#334155'}}>·</span>
+                      <span style={{fontSize:12,color:'#475569',fontFamily:'monospace'}}>{selUser.acct}</span>
+                    </div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontSize:32,fontWeight:800,color:riskColor(selUser.risk)}}>{selUser.risk}</div>
+                    <div style={{fontSize:11,color:'#475569'}}>Risk score · {riskLabel(selUser.risk)}</div>
+                  </div>
+                </div>
+
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+                  {[['PAN',selUser.pan],['Profile source',selUser.source],['Last updated',selUser.updated]].map(([l,v])=>(
+                    <div key={l} style={{background:'#111d34',borderRadius:10,padding:'10px 14px'}}>
+                      <div style={{fontSize:11,color:'#475569',marginBottom:3}}>{l}</div>
+                      <div style={{fontSize:13,fontWeight:600,color:'#e2e8f0',fontFamily:l==='PAN'?'monospace':'inherit'}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* patterns */}
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:16,padding:20,marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',marginBottom:14}}>Fraud patterns detected</div>
+                {selUser.patterns.length === 0
+                  ? <div style={{fontSize:13,color:'#334155',padding:'12px 0',textAlign:'center'}}>No patterns flagged</div>
+                  : selUser.patterns.map(pid=>{
+                      const p = FRAUD_PATTERNS.find(f=>f.name===pid) || {name:pid,desc:'Pattern detected in transaction history',severity:'high',count:1,amount:'—',cross:0};
+                      return (
+                        <div key={pid} style={{background:'#111d34',border:'1px solid #f8717122',borderRadius:12,padding:16,marginBottom:10}}>
+                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <span style={{fontSize:13,fontWeight:700,color:'#f87171'}}>{p.name}</span>
+                              <Badge color={sevColor(p.severity)}>{p.severity}</Badge>
+                            </div>
+                            {p.cross>0 && <span style={{fontSize:11,color:'#818cf8'}}>Also at {p.cross} other institutions (via MPC)</span>}
+                          </div>
+                          <div style={{fontSize:12,color:'#64748b',lineHeight:1.5}}>{p.desc}</div>
+                        </div>
+                      );
+                    })
+                }
+              </div>
+
+              {/* transaction timeline */}
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:16,padding:20,marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',marginBottom:14}}>Suspicious transaction timeline</div>
+                {[
+                  { ts:'2026-03-14 11:42', desc:'₹9,800 cash deposit',       flag:'Below ₹10K threshold', severity:'high'   },
+                  { ts:'2026-03-14 11:39', desc:'₹9,500 cash deposit',       flag:'Structured transaction', severity:'high'  },
+                  { ts:'2026-03-13 16:21', desc:'₹9,200 cash deposit',       flag:'Pattern: 3rd in 48hrs',  severity:'critical'},
+                  { ts:'2026-03-11 09:14', desc:'₹48,000 transfer → USR-3351',flag:'Linked flagged account', severity:'medium'},
+                ].map((t,i)=>(
+                  <div key={i} style={{display:'flex',gap:12,marginBottom:12,alignItems:'flex-start'}}>
+                    <div style={{width:8,height:8,borderRadius:'50%',background:t.severity==='critical'?'#f87171':t.severity==='high'?'#fbbf24':'#818cf8',marginTop:4,flexShrink:0}}/>
+                    <div style={{flex:1}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:2}}>
+                        <span style={{fontSize:13,color:'#e2e8f0'}}>{t.desc}</span>
+                        <span style={{fontSize:11,color:'#334155',fontFamily:'monospace'}}>{t.ts}</span>
+                      </div>
+                      <span style={{fontSize:11,color:'#f87171'}}>{t.flag}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* case actions */}
+              <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:14,padding:16,display:'flex',gap:10,justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:12,color:'#475569'}}>Case actions</span>
+                <div style={{display:'flex',gap:8}}>
+                  {[['Escalate to compliance','#f87171','#f871711a'],['File STR','#fbbf24','#fbbf241a'],['Mark resolved','#34d399','#34d3991a']].map(([l,c,bg])=>(
+                    <button key={l} style={{background:bg,border:`1px solid ${c}44`,borderRadius:8,padding:'7px 14px',color:c,fontSize:12,fontWeight:600,cursor:'pointer'}}>{l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────
    ROOT
 ───────────────────────────────────────── */
 const App = () => {
@@ -1584,9 +2026,11 @@ const App = () => {
 
   return <>
     {screen==='login'          && <Login          onLogin={m=>{setMode(m); setScreen(m==='live'?'live-onboarding': newUser?'onboarding':'dashboard');}} />}
-    {screen==='onboarding'     && <Onboarding     onDone={()=>{setNew(false); setScreen('dashboard');}} />}
-    {screen==='live-onboarding'&& <LiveOnboarding onDone={()=>setScreen('dashboard')} onLogout={()=>setScreen('login')} />}
-    {screen==='dashboard'      && <Dashboard      mode={mode} onLogout={()=>setScreen('login')} />}
+    {screen==='onboarding'     && <Onboarding     onDone={()=>{setNew(false); setScreen('hub');}} />}
+    {screen==='live-onboarding'&& <LiveOnboarding onDone={()=>setScreen('hub')} onLogout={()=>setScreen('login')} />}
+    {screen==='hub'            && <ModuleHub      mode={mode} onSelect={m=>setScreen(m==='guard'?'guard':'dashboard')} onLogout={()=>setScreen('login')} />}
+    {screen==='dashboard'      && <Dashboard      mode={mode} onLogout={()=>setScreen('hub')} />}
+    {screen==='guard'          && <SCGuard        mode={mode} onBack={()=>setScreen('hub')} />}
   </>;
 };
 
