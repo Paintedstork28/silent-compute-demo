@@ -319,6 +319,41 @@ const EXAMPLE_QUERIES = [
     filter: u => u.matched.includes('Times of India'),
     dist:[['Converted within 24h',22],['Converted 1–3 days',38],['Converted 3–7 days',40]], distLabel:'Time-to-conversion breakdown',
   },
+  {
+    id:'q7', tag:'Reach Planning', color:'#7c3aed',
+    q:'What is our true unique reach across Times of India, Hotstar, and Cricbuzz — after deduplication?',
+    why:'Each publisher claims tens of millions of users — but overlaps are enormous. SC runs a 3-party PSI across all three publisher nodes simultaneously. No publisher sees another\'s audience. You get: true deduplicated reach, per-publisher unique contribution, and exactly how much planned spend was going to duplicated users.',
+    steps:[
+      { n:1, party:'TOI + Hotstar + Cricbuzz', type:'3-Party PSI', desc:'All three publisher nodes run a simultaneous private set intersection. Each publisher secret-shares their audience with the MPC protocol — no publisher ever sees another\'s user list, only encrypted protocol messages.', result:'Protocol complete — 3-way intersection computed across 13.8 Cr claimed users', time:'8.4s', hash:'0x4e2b1f9a...7c3d8e01' },
+      { n:2, party:'HDFC Internal', type:'Secure Aggregate', desc:'Cross-reference the deduplicated publisher reach against your target audience. Count unique HDFC credit card holders reachable across the combined publisher network.', result:'74,20,000 of your customers are reachable (59.3% of base)', time:'2.1s', hash:'0x1b7f4c2e...9a3d5f08' },
+    ],
+    stats:[['True unique reach','8.2 Cr','#f1f5f9'],['Total claimed','13.8 Cr','#a78bfa'],['Duplication removed','5.6 Cr (40%)','#34d399']],
+    filter: u => u.matched.includes('Times of India'),
+    dist:[['TOI exclusive',38],['Hotstar exclusive',29],['Cricbuzz exclusive',22],['2+ publishers',11]], distLabel:'Exclusive vs overlapping reach',
+    venn:[
+      { label:'Times of India', claimed:'5.2 Cr', unique:'3.12 Cr', uniqPct:60, color:'#e11d48' },
+      { label:'Hotstar',        claimed:'4.8 Cr', unique:'2.40 Cr', uniqPct:50, color:'#7c3aed' },
+      { label:'Cricbuzz',       claimed:'3.8 Cr', unique:'1.84 Cr', uniqPct:48, color:'#0891b2' },
+    ],
+  },
+  {
+    id:'q8', tag:'Multi-touch Attribution', color:'#8b5cf6',
+    q:'Across the full campaign journey — TOI first touch, Hotstar last touch, HDFC conversion — how should attribution be split?',
+    why:'Last-touch attribution gives Hotstar 100% of the credit. But the user was first exposed on TOI 4 days earlier. SC computes Shapley values — a game-theory approach that fairly weights each touchpoint\'s marginal contribution to conversion. Computed across three nodes without any party seeing the others\' raw event data.',
+    steps:[
+      { n:1, party:'Times of India', type:'Secure Aggregate', desc:'TOI contributes encrypted impression timestamps for matched users (first-touch events). No user identifiers are revealed to HDFC or Hotstar — only secret shares enter the protocol.', result:'2,18,440 first-touch impressions contributed', time:'4.2s', hash:'0x2c9e1b4f...5a7d3c02' },
+      { n:2, party:'Hotstar', type:'Secure Aggregate', desc:'Hotstar contributes encrypted mid and last-touch impression timestamps. Neither TOI nor HDFC sees Hotstar\'s impression log — only their secret share participates.', result:'1,84,320 mid/last-touch impressions contributed', time:'3.9s', hash:'0x8a3f2d1e...4c6b9f07' },
+      { n:3, party:'TOI + Hotstar + HDFC', type:'Shapley Computation', desc:'Shapley values computed jointly across all three nodes. The protocol evaluates each party\'s marginal contribution to conversion — without any party seeing the complete event sequence for any individual user.', result:'TOI 34% · Hotstar 41% · Unattributed 25%', time:'6.7s', hash:'0x5f1a8c3b...2e4d7a09' },
+    ],
+    stats:[['TOI attribution','34%','#f1f5f9'],['Hotstar attribution','41%','#a78bfa'],['Unattributed','25%','#475569']],
+    filter: u => u.matched.includes('Times of India'),
+    dist:[['TOI first-touch',34],['Hotstar last-touch',41],['Unattributed / Direct',25]], distLabel:'Shapley attribution weights',
+    shapley:[
+      { party:'Times of India', pct:34, role:'First touch — 4 days before conversion', color:'#e11d48', budget:'₹1.36 Cr of ₹4 Cr total' },
+      { party:'Hotstar',        pct:41, role:'Last touch — 18 hours before conversion', color:'#7c3aed', budget:'₹1.64 Cr of ₹4 Cr total' },
+      { party:'Unattributed',   pct:25, role:'No matched impression — direct / organic', color:'#334155', budget:'Not billed' },
+    ],
+  },
 ];
 
 /* ─────────────────────────────────────────
@@ -1234,22 +1269,22 @@ const Dashboard = ({ mode, onLogout }) => {
                   );
                 })}
 
-                {/* ── Advertising Attribution section ── */}
+                {/* ── Advertising — Multi-party section ── */}
                 <div style={{marginTop:28,marginBottom:10}}>
                   <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
                     <div style={{height:1,flex:1,background:'#1e2d4a'}}/>
                     <div style={{display:'flex',alignItems:'center',gap:7,padding:'4px 12px',background:'#1a0d2e',border:'1px solid #7c3aed44',borderRadius:20}}>
                       <Ico n="target" size={12} cls="" style={{color:'#db2777'}}/>
-                      <span style={{fontSize:11,fontWeight:700,color:'#db2777',textTransform:'uppercase',letterSpacing:'0.07em'}}>Advertising Attribution</span>
+                      <span style={{fontSize:11,fontWeight:700,color:'#db2777',textTransform:'uppercase',letterSpacing:'0.07em'}}>Advertising — Multi-party Computation</span>
                     </div>
                     <div style={{height:1,flex:1,background:'#1e2d4a'}}/>
                   </div>
                   <p style={{fontSize:12,color:'#475569',marginBottom:10,lineHeight:1.6}}>
-                    Beyond audience matching — measure whether your campaigns actually worked. SC computes attribution across publisher impression data and your conversion data. Neither party shares the underlying records.
+                    3+ parties. No clean room. SC runs PSI and Shapley across all publisher and advertiser nodes simultaneously — reach planning, campaign attribution, and incrementality, without any party seeing the others' data.
                   </p>
                 </div>
 
-                {EXAMPLE_QUERIES.filter(q => q.id === 'q6').map(q => {
+                {EXAMPLE_QUERIES.filter(q => ['q6','q7','q8'].includes(q.id)).map(q => {
                   const open = selQuery?.id === q.id;
                   return (
                     <div key={q.id} style={{marginBottom:10}}>
@@ -1307,19 +1342,88 @@ const Dashboard = ({ mode, onLogout }) => {
                             ))}
                           </div>
 
-                          {/* bar chart */}
-                          <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:12,padding:16,marginBottom:16}}>
-                            <div style={{fontSize:11,color:'#64748b',marginBottom:10,fontWeight:600}}>{q.distLabel}</div>
-                            {q.dist.map(([lbl,pct])=>(
-                              <div key={lbl} style={{display:'flex',alignItems:'center',gap:10,marginBottom:7}}>
-                                <div style={{width:120,fontSize:11,color:'#475569',flexShrink:0}}>{lbl}</div>
-                                <div style={{flex:1,background:'#1e2d4a',borderRadius:4,height:8,overflow:'hidden'}}>
-                                  <div style={{width:`${pct}%`,height:'100%',background:q.color,borderRadius:4,transition:'width .4s'}}/>
+                          {/* venn table — reach planning */}
+                          {q.venn && (
+                            <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:12,padding:16,marginBottom:16}}>
+                              <div style={{fontSize:11,color:'#64748b',marginBottom:12,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>Per-publisher reach breakdown</div>
+                              {q.venn.map(p => (
+                                <div key={p.label} style={{marginBottom:12}}>
+                                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                      <div style={{width:8,height:8,borderRadius:'50%',background:p.color,flexShrink:0}}/>
+                                      <span style={{fontSize:12,fontWeight:600,color:'#94a3b8'}}>{p.label}</span>
+                                    </div>
+                                    <div style={{display:'flex',gap:16,alignItems:'center'}}>
+                                      <span style={{fontSize:11,color:'#475569'}}>Claimed: <span style={{color:'#64748b',fontWeight:600}}>{p.claimed}</span></span>
+                                      <span style={{fontSize:11,color:'#34d399',fontWeight:600}}>Unique: {p.unique} ({p.uniqPct}%)</span>
+                                    </div>
+                                  </div>
+                                  <div style={{height:6,background:'#1e2d4a',borderRadius:4,overflow:'hidden',display:'flex'}}>
+                                    <div style={{width:`${p.uniqPct}%`,height:'100%',background:p.color,borderRadius:4,transition:'width .5s'}}/>
+                                    <div style={{flex:1,height:'100%',background:p.color+'33'}}/>
+                                  </div>
                                 </div>
-                                <div style={{width:32,fontSize:11,color:'#94a3b8',fontWeight:600}}>{pct}%</div>
+                              ))}
+                              <div style={{marginTop:14,paddingTop:12,borderTop:'1px solid #1e2d4a',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                <div>
+                                  <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9'}}>True unique reach: <span style={{color:'#7c3aed'}}>8.2 Cr</span></div>
+                                  <div style={{fontSize:11,color:'#475569',marginTop:2}}>vs 13.8 Cr claimed — 40% was duplicated users</div>
+                                </div>
+                                <div style={{background:'#0a1f0a',border:'1px solid #16623444',borderRadius:8,padding:'8px 14px',textAlign:'right'}}>
+                                  <div style={{fontSize:12,fontWeight:700,color:'#34d399'}}>₹2.8 Cr saved</div>
+                                  <div style={{fontSize:10,color:'#475569'}}>at ₹50 CPM on 5.6 Cr duped impressions</div>
+                                </div>
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          )}
+
+                          {/* shapley bars — multi-touch attribution */}
+                          {q.shapley && (
+                            <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:12,padding:16,marginBottom:16}}>
+                              <div style={{fontSize:11,color:'#64748b',marginBottom:12,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>Shapley attribution — budget allocation</div>
+                              {/* segmented attribution bar */}
+                              <div style={{height:28,borderRadius:8,overflow:'hidden',display:'flex',marginBottom:14}}>
+                                {q.shapley.map(s => (
+                                  <div key={s.party} style={{width:`${s.pct}%`,background:s.color,display:'flex',alignItems:'center',justifyContent:'center',transition:'width .5s',position:'relative',overflow:'hidden'}}>
+                                    <span style={{fontSize:10,fontWeight:700,color:'#fff',zIndex:1,whiteSpace:'nowrap',padding:'0 4px'}}>{s.pct}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {/* per-party rows */}
+                              {q.shapley.map(s => (
+                                <div key={s.party} style={{display:'flex',alignItems:'center',gap:12,padding:'8px 0',borderTop:'1px solid #1e2d4a22'}}>
+                                  <div style={{width:10,height:10,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                                  <div style={{flex:1}}>
+                                    <div style={{fontSize:12,fontWeight:600,color:'#94a3b8'}}>{s.party}</div>
+                                    <div style={{fontSize:11,color:'#475569',marginTop:1}}>{s.role}</div>
+                                  </div>
+                                  <div style={{textAlign:'right'}}>
+                                    <div style={{fontSize:14,fontWeight:700,color: s.pct > 35 ? '#a78bfa' : s.pct > 20 ? '#94a3b8' : '#334155'}}>{s.pct}%</div>
+                                    <div style={{fontSize:10,color: s.budget==='Not billed'?'#334155':'#34d399',marginTop:1}}>{s.budget}</div>
+                                  </div>
+                                </div>
+                              ))}
+                              <div style={{marginTop:10,paddingTop:10,borderTop:'1px solid #1e2d4a',fontSize:11,color:'#475569',lineHeight:1.6}}>
+                                Shapley values computed via 3-party MPC. Each publisher's marginal contribution evaluated without seeing another party's event log.
+                              </div>
+                            </div>
+                          )}
+
+                          {/* default dist bar chart (for q6) */}
+                          {!q.venn && !q.shapley && (
+                            <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:12,padding:16,marginBottom:16}}>
+                              <div style={{fontSize:11,color:'#64748b',marginBottom:10,fontWeight:600}}>{q.distLabel}</div>
+                              {q.dist.map(([lbl,pct])=>(
+                                <div key={lbl} style={{display:'flex',alignItems:'center',gap:10,marginBottom:7}}>
+                                  <div style={{width:120,fontSize:11,color:'#475569',flexShrink:0}}>{lbl}</div>
+                                  <div style={{flex:1,background:'#1e2d4a',borderRadius:4,height:8,overflow:'hidden'}}>
+                                    <div style={{width:`${pct}%`,height:'100%',background:q.color,borderRadius:4,transition:'width .4s'}}/>
+                                  </div>
+                                  <div style={{width:32,fontSize:11,color:'#94a3b8',fontWeight:600}}>{pct}%</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           {/* access denied */}
                           <div style={{background:'#0d1526',border:'1px solid #1e2d4a',borderRadius:12,overflow:'hidden',marginBottom:16}}>
