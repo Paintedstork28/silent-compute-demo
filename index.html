@@ -102,14 +102,42 @@ const Ico = ({ n, size=16, cls='' }) => {
 const COMPANY = { id:'HDFC-001', name:'HDFC Bank', cloud:'AWS', region:'ap-south-1', nodeId:'SC-7F3A9C2B' };
 
 const USE_CASES = [
-  { id:'enrichment', name:'Data Enrichment',  icon:'db',     tag:'Most Active',  companies:12, color:'#2563eb,#0891b2', border:'#2563eb33',
-    desc:'Enrich customer profiles by jointly computing attributes across multiple data providers without sharing raw data.' },
-  { id:'advertising', name:'Advertising',     icon:'target', tag:'New',          companies:8,  color:'#7c3aed,#db2777', border:'#7c3aed33',
-    desc:'Privacy-safe audience matching and campaign measurement across publishers — no raw user lists shared.' },
-  { id:'credit',     name:'Credit Scoring',   icon:'card',   tag:'High Demand',  companies:15, color:'#059669,#0d9488', border:'#05966933',
-    desc:'Joint credit decisioning using multi-party data. Lender gets the decision, never the raw financials.' },
-  { id:'fraud',      name:'Fraud Detection',  icon:'shield', tag:'Regulatory',   companies:9,  color:'#d97706,#dc2626', border:'#d9770633',
-    desc:'Cross-institution fraud pattern detection and watchlist screening without sharing transaction data.' },
+  { id:'enrichment', name:'Data Enrichment', icon:'db', tag:'Most Active', companies:12, color:'#2563eb,#0891b2', border:'#2563eb33',
+    desc:'Each party keeps their data. Queries run across nodes. No one sees anyone else\'s raw records — only the computed answer.',
+    bullets:[
+      'Which of my customers also transact on PhonePe or Razorpay — and at what frequency?',
+      'What is the income and spending profile of my thin-file customers, computed across AA data?',
+      'Which of my users have an active loan at another lender — without that lender revealing their book?',
+      'Enrich my customer segments with transaction behaviour I don\'t hold — without anyone sending me raw data.',
+    ]
+  },
+  { id:'advertising', name:'Advertising', icon:'target', tag:'New', companies:8, color:'#7c3aed,#db2777', border:'#7c3aed33',
+    desc:'No clean room. No data pooling. Publishers and advertisers stay on their own nodes. Queries run across them via MPC.',
+    bullets:[
+      'How many of my customers made transactions above ₹10,000 on Razorpay in the last 30 days?',
+      'Which of my savings account holders also hold an active OTT premium subscription?',
+      'Which dormant card holders are actively transacting on a competitor — and are worth a reactivation offer?',
+      'Measure true campaign incrementality across publisher and advertiser data — without either side sharing user lists.',
+    ]
+  },
+  { id:'credit', name:'Credit Scoring', icon:'card', tag:'High Demand', companies:15, color:'#059669,#0d9488', border:'#05966933',
+    desc:'Lenders, bureaus, and AAs jointly compute a credit decision. The lender gets the score. No one gets the raw financials.',
+    bullets:[
+      'Score thin-file and new-to-credit customers using AA income data — without the AA sharing statements.',
+      'Verify a borrower\'s declared income against salary credits, without seeing the account.',
+      'Compute total debt obligations across lenders — without any lender revealing their book to the others.',
+      'Underwrite self-employed and gig workers using alternative data sources, privately combined.',
+    ]
+  },
+  { id:'fraud', name:'Fraud Detection', icon:'shield', tag:'Regulatory', companies:9, color:'#d97706,#dc2626', border:'#d9770633',
+    desc:'Banks stay on their own nodes. Cross-institution fraud signals are computed via MPC — no transaction data shared, ever.',
+    bullets:[
+      'Is this customer on any network watchlist? — without the bureau revealing who else is on it.',
+      'Are circular transactions or smurfing patterns appearing across institution boundaries?',
+      'How many other banks have flagged the same account in the last 30 days? — count only, no names.',
+      'Meet RBI\'s inter-bank fraud intelligence requirements without a single byte of raw data leaving any institution.',
+    ]
+  },
 ];
 
 const COMPANIES = {
@@ -730,13 +758,23 @@ const Dashboard = ({ mode, onLogout }) => {
                     </div>
                     <Badge color="slate">{uc.tag}</Badge>
                   </div>
-                  <div style={{fontSize:14,fontWeight:700,color:'#f1f5f9',marginBottom:6}}>{uc.name}</div>
-                  <p style={{fontSize:12,color:'#64748b',lineHeight:1.6,marginBottom:12}}>{uc.desc}</p>
-                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <div style={{fontSize:14,fontWeight:700,color:'#f1f5f9',marginBottom:5}}>{uc.name}</div>
+                  <p style={{fontSize:11,color:'#475569',lineHeight:1.5,marginBottom:12}}>{uc.desc}</p>
+                  <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
+                    {uc.bullets.map((b,i)=>(
+                      <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start'}}>
+                        <div style={{width:4,height:4,borderRadius:'50%',background:`linear-gradient(135deg,${uc.color})`,flexShrink:0,marginTop:5}}/>
+                        <span style={{fontSize:11,color:'#94a3b8',lineHeight:1.5}}>{b}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:10, borderTop:'1px solid #1e2d4a22'}}>
                     <span style={{fontSize:11,color:'#475569',display:'flex',alignItems:'center',gap:4}}>
                       <Ico n="users" size={11}/> {uc.companies} companies onboarded
                     </span>
-                    <Ico n="chevR" size={14} cls="" style={{color:'#475569'}}/>
+                    <span style={{fontSize:11,color:'#475569',display:'flex',alignItems:'center',gap:4}}>
+                      Explore <Ico n="chevR" size={12} cls="" style={{color:'#475569'}}/>
+                    </span>
                   </div>
                 </button>
               ))}
