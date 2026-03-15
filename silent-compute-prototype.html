@@ -493,8 +493,8 @@ const Login = ({ onLogin }) => {
       </div>
 
       <div style={{width:'100%', maxWidth:420, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16}}>
-        {card('sandbox', 'Sandbox Mode',  'Demo environment with mock data', 'sandbox')}
-        {card('live',    'Live Mode',     'Your production environment',     'live')}
+        {card('sandbox', 'Demo Mode',  'See how it works — no setup needed', 'sandbox')}
+        {card('live',    'Live Mode',  'Deploy your own node, use your own data', 'live')}
       </div>
 
       <div style={{width:'100%', maxWidth:420, background:'#0d1526', border:'1px solid #1e2d4a', borderRadius:18, padding:24}}>
@@ -519,7 +519,7 @@ const Login = ({ onLogin }) => {
             background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontSize:13, fontWeight:600,
             display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:busy?.7:1}}>
           {busy ? <><span className="spin" style={{width:14,height:14,border:'2px solid #ffffff44',borderTopColor:'#fff',borderRadius:'50%',display:'inline-block'}}/>Authenticating…</>
-                : <><Ico n="arrowR" size={14}/>{mode==='sandbox'?'Enter Sandbox':'Request Access'}</>}
+                : <><Ico n="arrowR" size={14}/>{mode==='sandbox'?'Explore Demo':'Request Access'}</>}
         </button>
       </div>
       <div style={{marginTop:20, fontSize:11, color:'#334155', display:'flex', alignItems:'center', gap:6}}>
@@ -565,20 +565,20 @@ const Onboarding = ({ onDone }) => {
 
         {!done ? (
           <div className="fade-up" style={{background:'#0d1526', border:'1px solid #1e2d4a', borderRadius:20, padding:32}}>
-            <h2 style={{fontSize:18, fontWeight:700, color:'#f1f5f9', marginBottom:6}}>Your Sandbox Node</h2>
+            <h2 style={{fontSize:18, fontWeight:700, color:'#f1f5f9', marginBottom:6}}>Your Demo Environment</h2>
             <p style={{fontSize:13, color:'#64748b', marginBottom:16, lineHeight:1.7}}>
-              We've provisioned a sandbox node for you on Silent Labs' infrastructure, pre-loaded with a dummy dataset. No installation needed.
+              We've provisioned a demo node on Silent Labs' infrastructure, pre-loaded with dummy data across four fictional entities. No installation needed.
             </p>
 
-            {/* Sandbox vs Production callout */}
+            {/* Demo vs Live callout */}
             <div style={{display:'flex', gap:10, alignItems:'flex-start', background:'#1e1b4b22', border:'1px solid #312e8144', borderRadius:12, padding:14, marginBottom:26}}>
               <Ico n="zap" size={14} cls="" style={{color:'#818cf8', flexShrink:0, marginTop:1}}/>
               <div>
-                <p style={{fontSize:12, color:'#a5b4fc', fontWeight:600, marginBottom:3}}>Sandbox mode</p>
+                <p style={{fontSize:12, color:'#a5b4fc', fontWeight:600, marginBottom:3}}>Demo mode</p>
                 <p style={{fontSize:12, color:'#64748b', lineHeight:1.6}}>
-                  In sandbox, SL manages your node so you can explore the platform instantly.
-                  When you go live, you deploy the node inside your own infrastructure — your AWS, GCP, or on-prem.
-                  At that point, not even we can see your data.
+                  In demo mode, SL manages the node and data so you can see the protocol in action immediately.
+                  When you're ready to use your own data, you deploy a node inside your own infrastructure — AWS, GCP, or on-prem.
+                  At that point, not even SL can see your data.
                 </p>
               </div>
             </div>
@@ -586,9 +586,9 @@ const Onboarding = ({ onDone }) => {
             {/* Production preferences — educational */}
             <div style={{marginBottom:22}}>
               <div style={{fontSize:11, color:'#64748b', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4}}>
-                Production node preferences
+                When you're ready to go live
               </div>
-              <p style={{fontSize:12, color:'#475569', marginBottom:10}}>Tell us where you'll deploy when you go live. We'll pre-configure your production setup.</p>
+              <p style={{fontSize:12, color:'#475569', marginBottom:10}}>Tell us where you'd deploy your own node. We'll pre-configure your setup — start with a small dataset, or go straight to production.</p>
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
                 {['AWS','GCP','Azure'].map(c => (
                   <button key={c} onClick={()=>{setCloud(c);setRegion('');}}
@@ -614,7 +614,7 @@ const Onboarding = ({ onDone }) => {
                 style={{width:'100%', padding:'12px 0', borderRadius:12, border:'none', cursor:'pointer',
                   background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
                   color:'#fff', fontSize:13, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', gap:8}}>
-                <Ico n="zap" size={14}/> Launch Sandbox
+                <Ico n="zap" size={14}/> Launch Demo
               </button>
             ) : (
               <div style={{background:'#0a1222', border:'1px solid #1e2d4a', borderRadius:12, padding:16}}>
@@ -636,14 +636,14 @@ const Onboarding = ({ onDone }) => {
             <div className="glow" style={{width:64,height:64,borderRadius:'50%',background:'linear-gradient(135deg,#059669,#10b981)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
               <Ico n="okCircle" size={30}/>
             </div>
-            <h2 style={{fontSize:18, fontWeight:700, color:'#f1f5f9', marginBottom:6}}>Sandbox Ready</h2>
-            <p style={{fontSize:13, color:'#64748b', marginBottom:4}}>Your sandbox node is live on the Silent Compute network.</p>
+            <h2 style={{fontSize:18, fontWeight:700, color:'#f1f5f9', marginBottom:6}}>Demo Ready</h2>
+            <p style={{fontSize:13, color:'#64748b', marginBottom:4}}>Your demo environment is live on the Silent Compute network.</p>
             <p style={{fontSize:12, color:'#475569', marginBottom:16, lineHeight:1.6}}>
-              It's pre-loaded with 10,000 dummy loan applicants. Connect to SL's dummy entities to run your first computation.
+              It's pre-loaded with dummy data across four fictional entities. Run a computation to see the protocol in action — no real data, no setup.
             </p>
             <div style={{display:'inline-flex', alignItems:'center', gap:8, background:'#064e3b22', border:'1px solid #064e3b66', borderRadius:8, padding:'6px 12px', marginBottom:10}}>
               <span className="pulse" style={{width:6,height:6,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/>
-              <span style={{fontSize:11, fontFamily:'monospace', color:'#34d399'}}>{COMPANY.nodeId} · Managed by SL · Sandbox</span>
+              <span style={{fontSize:11, fontFamily:'monospace', color:'#34d399'}}>{COMPANY.nodeId} · Managed by SL · Demo</span>
             </div>
             {cloud && (
               <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginBottom:20, fontSize:11, color:'#475569'}}>
@@ -652,9 +652,9 @@ const Onboarding = ({ onDone }) => {
               </div>
             )}
             <div style={{background:'#1e1b4b22', border:'1px solid #312e8133', borderRadius:10, padding:12, marginBottom:20, textAlign:'left'}}>
-              <p style={{fontSize:12, color:'#818cf8', fontWeight:600, marginBottom:4}}>When you go live</p>
+              <p style={{fontSize:12, color:'#818cf8', fontWeight:600, marginBottom:4}}>Ready to use your own data?</p>
               <p style={{fontSize:12, color:'#64748b', lineHeight:1.6}}>
-                You'll deploy the SC node inside your own {cloud||'cloud'} environment. Your data stays in your infrastructure — not even SL can access it.
+                Deploy the SC node inside your own {cloud||'cloud'} environment — takes about 15 minutes. Start with a sample table (even 500 rows works), or connect straight to production. Your data never leaves your infrastructure.
               </p>
             </div>
             <button onClick={onDone} style={{width:'100%', padding:'12px 0', borderRadius:12, border:'none', cursor:'pointer',
@@ -1758,6 +1758,12 @@ const LiveOnboarding = ({ onDone, onLogout }) => {
       <p style={{fontSize:13, color:'#94a3b8', marginBottom:12, lineHeight:1.6}}>
         Tell your node where your data lives. SC Node connects to your existing database — your data never leaves your infrastructure.
       </p>
+      <div style={{background:'#0a2218', border:'1px solid #16a34a44', borderRadius:10, padding:12, marginBottom:14, display:'flex', gap:10, alignItems:'flex-start'}}>
+        <Ico n="info" size={14} style={{color:'#34d399', flexShrink:0, marginTop:1}} />
+        <div style={{fontSize:12, color:'#94a3b8', lineHeight:1.6}}>
+          <strong style={{color:'#34d399'}}>Starting with an evaluation?</strong> Point the connector at a sample table — even 500 rows is enough to prove the protocol works. You can reconnect to your full dataset any time.
+        </div>
+      </div>
       <CodeBlock id="db" code={`sc-node connect \\\n  --db-type postgres \\\n  --db-host YOUR_DB_HOST \\\n  --db-port 5432 \\\n  --db-name YOUR_DB_NAME \\\n  --db-user YOUR_DB_USER \\\n  --db-pass YOUR_DB_PASS`} />
       <div style={{marginTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
         {[['PostgreSQL','Supported'],['MySQL / MariaDB','Supported'],['MongoDB','Beta'],['Snowflake','Coming soon']].map(([db,s])=>(
@@ -1806,7 +1812,7 @@ const LiveOnboarding = ({ onDone, onLogout }) => {
         <div>
           <div style={{fontSize:13, fontWeight:600, color:'#34d399', marginBottom:4}}>You're live!</div>
           <div style={{fontSize:12, color:'#94a3b8', lineHeight:1.6}}>
-            Your node is now part of the Silent Network. You can begin creating or accepting data collaboration requests from the dashboard.
+            Your node is now part of the Silent Network. Run your first computation — start with a small dataset if you're evaluating, or go straight to production data. Either way, your data never leaves your infrastructure.
           </div>
         </div>
       </div>
@@ -1826,7 +1832,7 @@ const LiveOnboarding = ({ onDone, onLogout }) => {
           <span style={{fontSize:22, fontWeight:700, color:'#f1f5f9', letterSpacing:'-0.02em'}}>Silent Compute</span>
           <Badge color="cyan">Live Setup</Badge>
         </div>
-        <p style={{fontSize:13, color:'#64748b'}}>Production node setup · 5 steps · ~15 min</p>
+        <p style={{fontSize:13, color:'#64748b'}}>Node setup · 5 steps · ~15 min · Works for evaluation or production</p>
       </div>
 
       <div style={{width:'100%', maxWidth:640, display:'flex', flexDirection:'column', gap:0}}>
