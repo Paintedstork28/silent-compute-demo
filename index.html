@@ -537,7 +537,7 @@ const Login = ({ onLogin }) => {
     if (user === 'sl-admin' && pass === 'sl-2026') { setBusy(true); setTimeout(() => onLogin('sl'), 1100); return; }
     if (mode === 'sandbox') {
       if (user === 'admin' && pass === 'admin') { setBusy(true); setTimeout(() => onLogin('sandbox'), 1100); }
-      else setErr('Invalid credentials. Use  admin / admin  for sandbox access.');
+      else setErr('Invalid credentials. Use  admin / admin  for demo access.');
     } else {
       if (user.trim() && pass.trim()) { setBusy(true); setTimeout(() => onLogin('live'), 1100); }
       else setErr('Please enter your company credentials to continue.');
@@ -635,7 +635,7 @@ const Onboarding = ({ onDone }) => {
   const [step,   setStep]   = useState(0);
   const [done,   setDone]   = useState(false);
   const regions = { AWS:['ap-south-1 (Mumbai)','ap-southeast-1 (Singapore)','us-east-1 (Virginia)'], GCP:['asia-south1 (Mumbai)','asia-southeast1 (Singapore)','us-central1 (Iowa)'], Azure:['centralindia (Pune)','southeastasia (Singapore)','eastus (Virginia)'] };
-  const deploySteps = ['Provisioning sandbox node on SL infrastructure…','Generating TLS certificates…','Registering with Silent Network…','Loading dummy dataset (10,000 applicants)…','Sandbox node online ✓'];
+  const deploySteps = ['Provisioning demo node on SL infrastructure…','Generating TLS certificates…','Registering with Silent Network…','Loading dummy dataset (10,000 applicants)…','Demo node online ✓'];
 
   const deploy = () => {
     let s = 0; setStep(0);
@@ -857,7 +857,7 @@ const Dashboard = ({ mode, onLogout }) => {
             border:`1px solid ${mode==='sandbox'?'#92400e55':'#064e3b55'}`, borderRadius:8, padding:'6px 12px', fontSize:11, fontWeight:600,
             color:mode==='sandbox'?'#fbbf24':'#34d399'}}>
             <Ico n={mode==='sandbox'?'zap':'unlock'} size={12}/>
-            {mode==='sandbox' ? 'Sandbox' : 'Live'}
+            {mode==='sandbox' ? 'Demo' : 'Live'}
           </div>
         </div>
       </header>
@@ -2189,7 +2189,7 @@ const ModuleHub = ({ mode, onSelect, onLogout }) => {
       <div style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px'}}>
         <div style={{textAlign:'center', marginBottom:48}}>
           <div style={{fontSize:24,fontWeight:700,color:'#f1f5f9',marginBottom:8}}>Good morning, {COMPANY.name}</div>
-          <div style={{fontSize:14,color:'#475569'}}>Select a module to continue · {mode === 'sandbox' ? 'Sandbox environment' : 'Production'}</div>
+          <div style={{fontSize:14,color:'#475569'}}>Select a module to continue · {mode === 'sandbox' ? 'Demo environment' : 'Production'}</div>
         </div>
 
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, width:'100%', maxWidth:680}}>
@@ -2218,7 +2218,7 @@ const ModuleHub = ({ mode, onSelect, onLogout }) => {
         {mode==='sandbox' && (
           <div style={{marginTop:24,background:'#1e1b4b22',border:'1px solid #4f46e555',borderRadius:12,padding:'10px 18px',display:'flex',gap:10,alignItems:'center',maxWidth:680,width:'100%'}}>
             <Ico n="zap" size={13} style={{color:'#818cf8',flexShrink:0}}/>
-            <span style={{fontSize:12,color:'#64748b'}}>Sandbox mode — SC Insights and SC Guard are loaded with dummy data. <span style={{color:'#818cf8'}}>Your sandbox node is managed by SL.</span></span>
+            <span style={{fontSize:12,color:'#64748b'}}>Demo mode — SC Insights and SC Guard are loaded with dummy data. <span style={{color:'#818cf8'}}>Your demo node is managed by SL.</span></span>
           </div>
         )}
       </div>
@@ -2303,7 +2303,7 @@ const SCGuard = ({ mode, onBack }) => {
 
           {mode==='sandbox' && (
             <div style={{marginTop:24,background:'#0c1628',border:'1px solid #1e2d4a',borderRadius:9,padding:'10px 12px'}}>
-              <div style={{fontSize:10,color:'#22d3ee',fontWeight:600,marginBottom:4}}>Sandbox data</div>
+              <div style={{fontSize:10,color:'#22d3ee',fontWeight:600,marginBottom:4}}>Demo data</div>
               <div style={{fontSize:10,color:'#334155',lineHeight:1.5}}>Pre-loaded with dummy flagged users and fraud patterns. No real data.</div>
             </div>
           )}
