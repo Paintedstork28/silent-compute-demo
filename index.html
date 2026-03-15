@@ -433,6 +433,96 @@ const EncFlow = ({ partyA, partyB }) => (
 );
 
 /* ─────────────────────────────────────────
+   DATA FLOW DIAGRAM
+───────────────────────────────────────── */
+const DataFlowDiagram = () => (
+  <div style={{background:'#070d1a', border:'1px solid #1e3a5f', borderRadius:12, padding:16, marginBottom:16}}>
+    <div style={{fontSize:11, color:'#64748b', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:14}}>How your data moves</div>
+    <div style={{display:'flex', alignItems:'stretch', gap:8}}>
+
+      {/* Party A */}
+      <div style={{flex:1, background:'#0a1222', border:'1px solid #1e3a5f', borderRadius:10, padding:12}}>
+        <div style={{fontSize:10, color:'#475569', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:10}}>Your infrastructure</div>
+        <div style={{display:'flex', flexDirection:'column', gap:4}}>
+          <div style={{display:'flex', alignItems:'center', gap:7}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#111d34',border:'1px solid #1e2d4a',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Ico n="db" size={14}/>
+            </div>
+            <span style={{fontSize:11,color:'#94a3b8'}}>Your database</span>
+          </div>
+          <div style={{marginLeft:14,color:'#1e3a5f',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{marginLeft:10,fontSize:10,color:'#334155',fontStyle:'italic'}}>local read only</div>
+          <div style={{marginLeft:14,color:'#1e3a5f',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{display:'flex', alignItems:'center', gap:7}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#111d34',border:'1px solid #312e81',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Ico n="cpu" size={14}/>
+            </div>
+            <span style={{fontSize:11,color:'#94a3b8'}}>SC Node</span>
+          </div>
+          <div style={{marginLeft:14,color:'#1e3a5f',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{marginLeft:10,fontSize:10,color:'#334155',fontStyle:'italic'}}>secret shares generated locally</div>
+          <div style={{marginLeft:14,color:'#4f46e5',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{display:'flex', alignItems:'center', gap:7}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#1e1b4b44',border:'1px solid #4f46e5',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Ico n="lock" size={14}/>
+            </div>
+            <span style={{fontSize:11,color:'#818cf8',fontWeight:600}}>Encrypted only →</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Network channel */}
+      <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6, minWidth:36}}>
+        <div style={{position:'relative', width:36, height:40}}>
+          <div style={{position:'absolute', top:'50%', left:0, right:0, height:1, background:'#1e3a5f'}}/>
+          <span className="flow-r" style={{background:'#6366f1', animationDelay:'0s'}}/>
+          <span className="flow-l" style={{background:'#8b5cf6', animationDelay:'0.9s'}}/>
+        </div>
+        <span style={{fontSize:9, color:'#334155', textAlign:'center', lineHeight:1.4}}>network<br/>only 🔒</span>
+      </div>
+
+      {/* Party B */}
+      <div style={{flex:1, background:'#0a1222', border:'1px solid #1e3a5f', borderRadius:10, padding:12}}>
+        <div style={{fontSize:10, color:'#475569', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:10}}>Counterparty infra</div>
+        <div style={{display:'flex', flexDirection:'column', gap:4}}>
+          <div style={{display:'flex', alignItems:'center', gap:7}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#111d34',border:'1px solid #1e2d4a',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Ico n="db" size={14}/>
+            </div>
+            <span style={{fontSize:11,color:'#94a3b8'}}>Their database</span>
+          </div>
+          <div style={{marginLeft:14,color:'#1e3a5f',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{marginLeft:10,fontSize:10,color:'#334155',fontStyle:'italic'}}>local read only</div>
+          <div style={{marginLeft:14,color:'#1e3a5f',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{display:'flex', alignItems:'center', gap:7}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#111d34',border:'1px solid #312e81',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Ico n="cpu" size={14}/>
+            </div>
+            <span style={{fontSize:11,color:'#94a3b8'}}>SC Node</span>
+          </div>
+          <div style={{marginLeft:14,color:'#1e3a5f',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{marginLeft:10,fontSize:10,color:'#334155',fontStyle:'italic'}}>secret shares generated locally</div>
+          <div style={{marginLeft:14,color:'#4f46e5',fontSize:13,lineHeight:1}}>│</div>
+          <div style={{display:'flex', alignItems:'center', gap:7}}>
+            <div style={{width:30,height:30,borderRadius:8,background:'#1e1b4b44',border:'1px solid #4f46e5',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Ico n="lock" size={14}/>
+            </div>
+            <span style={{fontSize:11,color:'#818cf8',fontWeight:600}}>← Encrypted only</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style={{marginTop:12, padding:'8px 12px', background:'#0a2218', border:'1px solid #16a34a33', borderRadius:8, display:'flex', gap:8, alignItems:'center'}}>
+      <Ico n="shield" size={12}/>
+      <span style={{fontSize:11, color:'#64748b', lineHeight:1.5}}>
+        Raw data never leaves either party's infrastructure. Only encrypted protocol messages travel over the network — nothing readable, ever.
+      </span>
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────
    LOGIN
 ───────────────────────────────────────── */
 const Login = ({ onLogin }) => {
@@ -582,6 +672,9 @@ const Onboarding = ({ onDone }) => {
                 </p>
               </div>
             </div>
+
+            {/* Data flow diagram */}
+            <DataFlowDiagram />
 
             {/* Production preferences — educational */}
             <div style={{marginBottom:22}}>
@@ -1758,6 +1851,7 @@ const LiveOnboarding = ({ onDone, onLogout }) => {
       <p style={{fontSize:13, color:'#94a3b8', marginBottom:12, lineHeight:1.6}}>
         Tell your node where your data lives. SC Node connects to your existing database — your data never leaves your infrastructure.
       </p>
+      <DataFlowDiagram />
       <div style={{background:'#0a2218', border:'1px solid #16a34a44', borderRadius:10, padding:12, marginBottom:14, display:'flex', gap:10, alignItems:'flex-start'}}>
         <Ico n="info" size={14} style={{color:'#34d399', flexShrink:0, marginTop:1}} />
         <div style={{fontSize:12, color:'#94a3b8', lineHeight:1.6}}>
