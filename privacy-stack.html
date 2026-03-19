@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Stack for the Agentic Era — Silence Laboratories</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #f8f6f2; color: #272b27; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #eae3d7; }
+    ::-webkit-scrollbar-thumb { background: #c8c0b4; border-radius: 4px; }
+
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+    @keyframes glow     { 0%,100% { box-shadow:0 0 0 0 #2676ff22; } 50% { box-shadow:0 0 16px 4px #2676ff33; } }
+    @keyframes flowR    { 0%{left:0;opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{left:calc(100% - 8px);opacity:0} }
+    @keyframes badPulse { 0%,100%{box-shadow:0 0 0 0 #dc262622} 50%{box-shadow:0 0 0 6px #dc262600} }
+
+    .fade-up   { animation: fadeUp .5s ease forwards; }
+    .pulse     { animation: pulse 2.5s ease-in-out infinite; }
+    .glow      { animation: glow 2.5s ease-in-out infinite; }
+    .flow-dot  { position:absolute; top:50%; margin-top:-4px; width:8px; height:8px; border-radius:50%; animation: flowR 1.8s ease-in-out infinite; }
+    .bad-pulse { animation: badPulse 1.8s ease-in-out infinite; }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #1f54a8, #2676ff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .card-base {
+      background: #ffffff;
+      border: 1px solid #e5e0d8;
+      transition: all 0.2s ease;
+    }
+    .card-base:hover { border-color: #c8c0b4; box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateY(-1px); }
+
+    .stack-card {
+      background: #ffffff;
+      border: 1px solid #e5e0d8;
+      transition: all 0.2s ease;
+    }
+    .stack-card:hover { border-color: #2676ff44; box-shadow: 0 4px 20px rgba(38,118,255,0.08); transform: translateY(-1px); }
+
+    .nav-bar {
+      backdrop-filter: blur(20px);
+      background: rgba(248,246,242,0.92);
+      border-bottom: 1px solid #e5e0d8;
+    }
+
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #999999;
+    }
+
+    .btn-primary {
+      background: #1f54a8;
+      color: #ffffff;
+      border: none;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #2676ff; }
+
+    .btn-ghost {
+      background: transparent;
+      color: #444;
+      border: 1px solid #d8d3cc;
+      transition: border-color 0.15s;
+    }
+    .btn-ghost:hover { border-color: #999; color: #272b27; }
+
+    .flow-line-base { position:relative; height:2px; background: #ddd8d0; overflow:visible; }
+    .flow-line-red  { background: #fca5a5; }
+    .flow-line-green { background: #86efac; }
+
+    .tag-pill {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+      padding: 2px 8px; border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── SVG Icon System ── */
+const SVG = ({ ch, size=16, cls='' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
+    className={cls} dangerouslySetInnerHTML={{__html: ch}} />
+);
+const icons = {
+  shield:   `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`,
+  lock:     `<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`,
+  unlock:   `<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>`,
+  key:      `<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>`,
+  agent:    `<path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/><path d="M2 20a10 10 0 0 1 20 0"/>`,
+  cpu:      `<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>`,
+  zap:      `<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>`,
+  x:        `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+  check:    `<path d="M20 6L9 17l-5-5"/>`,
+  alert:    `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
+  eye:      `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`,
+  eyeOff:   `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`,
+  msg:      `<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>`,
+  compute:  `<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>`,
+  shard:    `<polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>`,
+  arrow:    `<path d="M5 12h14M12 5l7 7-7 7"/>`,
+  arrowD:   `<path d="M12 5v14M5 12l7 7 7-7"/>`,
+  globe:    `<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>`,
+  db:       `<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>`,
+  inject:   `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="12" y1="7" x2="12" y2="15"/>`,
+  docs:     `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>`,
+  audit:    `<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>`,
+  building: `<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 22V12h6v10M9 7h1M14 7h1M9 12h1M14 12h1"/>`,
+};
+const Icon = ({ n, size=16, cls='', style }) => <SVG ch={icons[n]} size={size} cls={cls} style={style} />;
+
+/* ── Nav ── */
+const Nav = () => (
+  <nav className="nav-bar fixed top-0 left-0 right-0 z-50 px-8 py-4">
+    <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{background:'#1f54a8'}}>
+          <Icon n="shard" size={14} cls="text-white" />
+        </div>
+        <span className="font-semibold text-sm" style={{color:'#272b27'}}>Silence Laboratories</span>
+      </div>
+      <div className="flex items-center gap-7 text-sm" style={{color:'#555'}}>
+        {['Silent Shard','Silent Compute','AP3','Docs'].map(l => (
+          <a key={l} href="#"
+            className="transition-colors hover:text-blue-600"
+            style={{color:'#555', textDecoration:'none'}}>{l}</a>
+        ))}
+        <button className="btn-primary px-4 py-1.5 rounded-lg text-xs font-semibold">
+          Get Started
+        </button>
+      </div>
+    </div>
+  </nav>
+);
+
+/* ── Hero ── */
+const Hero = () => (
+  <section className="pt-32 pb-20 px-6 text-center" style={{background:'#f8f6f2'}}>
+    <div className="max-w-4xl mx-auto">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-6"
+        style={{background:'#eff6ff', border:'1px solid #bfdbfe', color:'#1d4ed8'}}>
+        <Icon n="shield" size={11} />
+        Built for the agentic enterprise
+      </div>
+      <h1 className="text-5xl font-bold leading-tight mb-5" style={{color:'#272b27', letterSpacing:'-0.02em'}}>
+        <span className="gradient-text">Privacy Stack</span>
+        <br />
+        <span>for the Agentic Era</span>
+      </h1>
+      <p className="text-lg max-w-2xl mx-auto leading-relaxed mb-3" style={{color:'#555'}}>
+        AI agents are being given access to your emails, databases, APIs, and financial systems — with no cryptographic identity, no tamper-proof communication, and no privacy guarantee on shared data.
+      </p>
+      <div className="flex items-center justify-center gap-4 mt-8">
+        <button className="btn-primary px-6 py-2.5 rounded-lg font-semibold text-sm">
+          See the Stack
+        </button>
+        <button className="btn-ghost px-6 py-2.5 rounded-lg font-semibold text-sm">
+          Read the Docs
+        </button>
+      </div>
+    </div>
+  </section>
+);
+
+/* ── Flow Step ── */
+const Step = ({ icon, label, sublabel, color='blue', bad=false, good=false, tag=null }) => {
+  const colors = {
+    blue:   { bg:'#eff6ff', border:'#bfdbfe', icon:'#2563eb', text:'#1d4ed8' },
+    indigo: { bg:'#eef2ff', border:'#c7d2fe', icon:'#4f46e5', text:'#4338ca' },
+    cyan:   { bg:'#ecfeff', border:'#a5f3fc', icon:'#0891b2', text:'#0e7490' },
+    green:  { bg:'#f0fdf4', border:'#bbf7d0', icon:'#16a34a', text:'#15803d' },
+    red:    { bg:'#fef2f2', border:'#fecaca', icon:'#dc2626', text:'#b91c1c' },
+    orange: { bg:'#fff7ed', border:'#fed7aa', icon:'#ea580c', text:'#c2410c' },
+    purple: { bg:'#faf5ff', border:'#e9d5ff', icon:'#9333ea', text:'#7e22ce' },
+  };
+  const c = colors[color] || colors.blue;
+  return (
+    <div className="flex flex-col items-center">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${bad?'bad-pulse':''}`}
+        style={{background:c.bg, border:`1.5px solid ${c.border}`}}>
+        <Icon n={icon} size={20} style={{color:c.icon}} />
+      </div>
+      <span className="text-xs font-semibold text-center leading-tight" style={{color:'#272b27'}}>{label}</span>
+      {sublabel && <span className="text-xs text-center mt-0.5 max-w-20 leading-tight" style={{color:'#999'}}>{sublabel}</span>}
+      {tag && (
+        <span className="tag-pill mt-1.5"
+          style={{background:c.bg, color:c.text, border:`1px solid ${c.border}`}}>
+          {tag}
+        </span>
+      )}
+    </div>
+  );
+};
+
+/* ── Arrow connector ── */
+const Arrow = ({ red=false, green=false }) => (
+  <div className="flex flex-col items-center justify-center pt-3" style={{minWidth:40}}>
+    <div style={{width:48, height:2, position:'relative', overflow:'visible',
+      background: red ? '#fca5a5' : green ? '#86efac' : '#ddd8d0'}}>
+      {!red && <div className="flow-dot" style={{background: green ? '#16a34a' : '#2676ff'}} />}
+    </div>
+  </div>
+);
+
+/* ── WITHOUT SL flow ── */
+const WithoutFlow = () => (
+  <div>
+    <div className="overflow-x-auto pb-4">
+      <div className="flex items-start justify-center gap-0 min-w-max mx-auto px-4">
+        <Step icon="agent" label="You" sublabel="Type request" color="blue" />
+        <Arrow />
+        <Step icon="cpu" label="Your Agent" sublabel="LLM agent" color="indigo" bad />
+        <Arrow red />
+        <Step icon="unlock" label="OAuth Tokens" sublabel="Full credentials stored" color="red" bad />
+        <Arrow red />
+        <Step icon="globe" label="3rd Party Infra" sublabel="Outside your control" color="red" bad />
+        <Arrow red />
+        <Step icon="msg" label="A2A Message" sublabel="Unsigned plaintext" color="orange" bad />
+        <Arrow red />
+        <Step icon="cpu" label="Bank Agent" sublabel="Unknown identity" color="red" bad />
+        <Arrow red />
+        <Step icon="db" label="Raw Data" sublabel="Fully exposed" color="red" bad />
+        <Arrow red />
+        <Step icon="docs" label="Decision" sublabel="No audit trail" color="orange" bad />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+      {[
+        {
+          icon: 'unlock', color: 'red', title: '1. Agent Setup',
+          subtitle: 'Ungoverned Credentials',
+          body: 'Full tokens created per agent per service, stored outside your infra. No visibility for IT.',
+          vulns: ['No expiry or token rotation','Invisible to your IAM system'],
+        },
+        {
+          icon: 'eye', color: 'red', title: '2. Agent Authentication',
+          subtitle: 'No Identity Verification',
+          body: 'Only the transport layer is verified. No proof the other agent is who it claims.',
+          vulns: ['Agent cards can be spoofed','Bearer token stolen = full impersonation'],
+        },
+        {
+          icon: 'inject', color: 'red', title: '3. Message Communication',
+          subtitle: 'No Tamper Protection',
+          body: 'No per-message signatures. A compromised agent in any hop can silently modify instructions.',
+          vulns: ['Agent-in-the-middle undetectable','Prompt injection, replay attacks possible'],
+        },
+        {
+          icon: 'db', color: 'red', title: '4. Data Sharing',
+          subtitle: 'Raw Data Exposed',
+          body: 'Joint computation requires sharing raw inputs in plaintext. Both parties\' private data fully exposed.',
+          vulns: ['Counterparty sees your raw data','Regulatory liability on both sides'],
+        },
+      ].map(card => (
+        <div key={card.title} className="rounded-xl p-5" style={{background:'#fff5f5', border:'1px solid #fecaca'}}>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'#fee2e2', border:'1px solid #fca5a5'}}>
+              <Icon n={card.icon} size={14} style={{color:'#dc2626'}} />
+            </div>
+            <span className="text-xs font-bold" style={{color:'#dc2626'}}>{card.title}</span>
+          </div>
+          <h3 className="font-semibold text-sm mb-2" style={{color:'#272b27'}}>{card.subtitle}</h3>
+          <p className="text-xs leading-relaxed mb-3" style={{color:'#666'}}>{card.body}</p>
+          <div className="space-y-1.5">
+            {card.vulns.map(v => (
+              <div key={v} className="flex items-start gap-1.5">
+                <Icon n="x" size={11} style={{color:'#dc2626'}} cls="mt-0.5 flex-shrink-0" />
+                <span className="text-xs" style={{color:'#666'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── WITH SL flow ── */
+const WithFlow = () => (
+  <div>
+    <div className="overflow-x-auto pb-4">
+      <div className="flex items-start justify-center gap-0 min-w-max mx-auto px-4">
+        <Step icon="agent" label="You" sublabel="Type request" color="blue" />
+        <Arrow green />
+        <Step icon="shard" label="Your Agent" sublabel="Shard-backed identity" color="indigo" tag="Silent Shard" good />
+        <Arrow green />
+        <Step icon="key" label="Scoped Token" sublabel="Shard, not full key" color="green" tag="Silent Shard" good />
+        <Arrow green />
+        <Step icon="shield" label="AP3 Handshake" sublabel="Mutual verification" color="purple" tag="AP3" good />
+        <Arrow green />
+        <Step icon="msg" label="Signed Message" sublabel="Per-message proof" color="cyan" tag="AP3" good />
+        <Arrow green />
+        <Step icon="cpu" label="Bank Agent" sublabel="Cryptographically verified" color="green" tag="AP3" good />
+        <Arrow green />
+        <Step icon="compute" label="Silent Compute" sublabel="MPC — no raw data" color="indigo" tag="Silent Compute" good />
+        <Arrow green />
+        <Step icon="audit" label="Signed Result" sublabel="Joint attestation" color="green" tag="AP3" good />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+      {[
+        {
+          product: 'Silent Shard', productColor: '#4f46e5', productBg: '#eef2ff', productBorder: '#c7d2fe',
+          icon: 'shard', step: '1', title: 'Agent Setup', subtitle: 'Cryptographic Agent Identity',
+          body: 'Every agent gets a keypair at registration. The private key is split — one shard in your infra, one in SL\'s enclave. Neither side alone can act.',
+          prots: [
+            { t: 'Agent holds a shard, not a full credential', p: 'Silent Shard' },
+            { t: 'Stolen shard is cryptographically useless alone', p: 'Silent Shard' },
+            { t: 'Scoped, short-lived access per task', p: 'Silent Shard' },
+            { t: 'Visible to your IAM and audit systems', p: 'Silent Shard' },
+          ],
+        },
+        {
+          product: 'AP3', productColor: '#9333ea', productBg: '#faf5ff', productBorder: '#e9d5ff',
+          icon: 'shield', step: '2', title: 'Agent Authentication', subtitle: 'Zero-Trust Agent Verification',
+          body: 'Agents mutually verify identities via cryptographic handshake before any data is exchanged. Signed agent cards mean fake agents fail at the door.',
+          prots: [
+            { t: 'Agent card signed with Silent Shard keypair', p: 'AP3 + Silent Shard' },
+            { t: 'Mutual cryptographic handshake before any data', p: 'AP3' },
+            { t: 'Privacy Intent Directive agreed before computation', p: 'AP3' },
+            { t: 'Pedersen commitment to input data', p: 'AP3' },
+          ],
+        },
+        {
+          product: 'AP3', productColor: '#0891b2', productBg: '#ecfeff', productBorder: '#a5f3fc',
+          icon: 'msg', step: '3', title: 'Message Communication', subtitle: 'Tamper-Proof Agent Messages',
+          body: 'Every message carries a cryptographic signature bound to the session and sender. Injection, interception, and replay attacks are detected and rejected.',
+          prots: [
+            { t: 'Per-message signature — tampering detected anywhere', p: 'AP3' },
+            { t: 'Sequence + session binding prevents replay', p: 'AP3' },
+            { t: 'Multi-hop chain: each hop signs, all verifiable', p: 'AP3' },
+            { t: 'Prompt injection in documents can\'t forge signatures', p: 'AP3' },
+          ],
+        },
+        {
+          product: 'Silent Compute', productColor: '#2563eb', productBg: '#eff6ff', productBorder: '#bfdbfe',
+          icon: 'compute', step: '4', title: 'Data & Final Approval', subtitle: 'Private Joint Computation',
+          body: 'Silent Compute runs MPC so neither party\'s raw data is ever shared. Only the result emerges — jointly attested and cryptographically non-repudiable.',
+          prots: [
+            { t: 'Raw data never leaves either party\'s infra', p: 'Silent Compute' },
+            { t: 'Inputs committed before computation starts', p: 'Silent Compute + AP3' },
+            { t: 'Result signed by both agents — non-repudiable', p: 'AP3' },
+            { t: 'Full cryptographic audit trail for regulators', p: 'AP3' },
+          ],
+        },
+      ].map(card => (
+        <div key={card.title} className="rounded-xl p-5" style={{background:card.productBg, border:`1px solid ${card.productBorder}`}}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{background:'#fff', border:`1px solid ${card.productBorder}`}}>
+                <Icon n={card.icon} size={14} style={{color:card.productColor}} />
+              </div>
+              <span className="text-xs font-bold" style={{color:card.productColor}}>
+                {card.step}. {card.title}
+              </span>
+            </div>
+            <span className="tag-pill"
+              style={{background:'#fff', color:card.productColor, border:`1px solid ${card.productBorder}`}}>
+              {card.product}
+            </span>
+          </div>
+          <h3 className="font-semibold text-sm mb-2" style={{color:'#272b27'}}>{card.subtitle}</h3>
+          <p className="text-xs leading-relaxed mb-3" style={{color:'#666'}}>{card.body}</p>
+          <div className="space-y-1.5">
+            {card.prots.map(p => (
+              <div key={p.t} className="flex items-start gap-1.5">
+                <Icon n="check" size={11} style={{color:'#16a34a'}} cls="mt-0.5 flex-shrink-0" />
+                <span className="text-xs" style={{color:'#444'}}>
+                  {p.t}
+                  <span style={{color:'#aaa'}}> · {p.p}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── Compare Section (stacked) ── */
+const CompareSection = () => (
+  <section className="py-20 px-6" style={{background:'#f8f6f2'}}>
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-14">
+        <span className="section-label">End-to-End Agentic Flow</span>
+        <h2 className="text-3xl font-bold mt-3 mb-3" style={{color:'#272b27', letterSpacing:'-0.02em'}}>
+          From "I want a loan" to cryptographic approval
+        </h2>
+        <p className="text-sm max-w-xl mx-auto" style={{color:'#666'}}>
+          See what's exposed today — and what the SL Privacy Stack closes at every layer.
+        </p>
+      </div>
+
+      {/* WITHOUT SL */}
+      <div className="rounded-2xl p-8 mb-4" style={{background:'#fff', border:'1px solid #fca5a5'}}>
+        <div className="flex items-center gap-3 mb-7">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{background:'#fee2e2', border:'1px solid #fca5a5'}}>
+            <Icon n="alert" size={16} style={{color:'#dc2626'}} />
+          </div>
+          <div>
+            <span className="text-sm font-bold uppercase tracking-widest" style={{color:'#dc2626'}}>Without Silence Labs</span>
+            <p className="text-xs mt-0.5" style={{color:'#999'}}>Current state — every step is a vulnerability</p>
+          </div>
+        </div>
+        <WithoutFlow />
+      </div>
+
+      {/* VS divider */}
+      <div className="flex items-center gap-4 my-3">
+        <div className="flex-1 h-px" style={{background:'linear-gradient(to right, transparent, #ddd8d0)'}} />
+        <div className="px-4 py-1.5 rounded-full text-xs font-bold tracking-widest"
+          style={{background:'#fff', border:'1px solid #e5e0d8', color:'#999'}}>VS</div>
+        <div className="flex-1 h-px" style={{background:'linear-gradient(to left, transparent, #ddd8d0)'}} />
+      </div>
+
+      {/* WITH SL */}
+      <div className="rounded-2xl p-8 mt-4" style={{background:'#fff', border:'1px solid #86efac'}}>
+        <div className="flex items-center gap-3 mb-7">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{background:'#f0fdf4', border:'1px solid #86efac'}}>
+            <Icon n="shield" size={16} style={{color:'#16a34a'}} />
+          </div>
+          <div>
+            <span className="text-sm font-bold uppercase tracking-widest" style={{color:'#16a34a'}}>With SL Privacy Stack</span>
+            <p className="text-xs mt-0.5" style={{color:'#999'}}>Cryptographic guarantees at every layer</p>
+          </div>
+        </div>
+        <WithFlow />
+      </div>
+    </div>
+  </section>
+);
+
+/* ── The Stack Section ── */
+const StackSection = () => (
+  <section className="py-20 px-6" style={{background:'#eae3d7'}}>
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-14">
+        <span className="section-label">The Privacy Stack</span>
+        <h2 className="text-3xl font-bold mt-3 mb-3" style={{color:'#272b27', letterSpacing:'-0.02em'}}>
+          Three products. One unified stack.
+        </h2>
+        <p className="max-w-xl mx-auto text-sm" style={{color:'#666'}}>
+          Each product solves a distinct layer of the agentic trust problem.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          {
+            name: 'Silent Shard', tagline: 'Agent Credential Security',
+            color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe', icon: 'shard', layer: 'Identity Layer',
+            desc: 'Agents never hold full credentials. Private keys are split into shards — compromise an agent, get nothing.',
+            usecases: ['Agent keypair issuance','OAuth token splitting','Multi-sig agent approvals','Hardware-backed signing'],
+          },
+          {
+            name: 'AP3', tagline: 'Agent Trust Protocol',
+            color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', icon: 'shield', layer: 'Communication Layer',
+            desc: 'The trust layer the A2A protocol chose not to build. Cryptographic verification, per-message signing, and joint attestation on every result.',
+            usecases: ['Mutual agent verification','Per-message integrity','Cross-framework trust (CrewAI ↔ LangChain)','Audit trail for regulators'],
+          },
+          {
+            name: 'Silent Compute', tagline: 'Private Joint Computation',
+            color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: 'compute', layer: 'Computation Layer',
+            desc: 'Two parties compute a joint result — scores, eligibility, compliance — without either ever seeing the other\'s raw data.',
+            usecases: ['Cross-institution fraud models','Alternate data for lending','Privacy-preserving compliance','Federated ML with secure aggregation'],
+          },
+        ].map(p => (
+          <div key={p.name} className="stack-card rounded-2xl p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center glow"
+                style={{background:p.bg, border:`1.5px solid ${p.border}`}}>
+                <Icon n={p.icon} size={20} style={{color:p.color}} />
+              </div>
+              <span className="tag-pill" style={{background:p.bg, color:p.color, border:`1px solid ${p.border}`}}>
+                {p.layer}
+              </span>
+            </div>
+            <h3 className="text-lg font-bold mb-0.5" style={{color:'#272b27'}}>{p.name}</h3>
+            <p className="text-xs font-semibold mb-3" style={{color:p.color}}>{p.tagline}</p>
+            <p className="text-sm leading-relaxed mb-4" style={{color:'#555'}}>{p.desc}</p>
+            <div className="space-y-2">
+              {p.usecases.map(u => (
+                <div key={u} className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full flex-shrink-0" style={{background:p.color}} />
+                  <span className="text-xs" style={{color:'#666'}}>{u}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+/* ── Integration Section ── */
+const Integration = () => {
+  const [activeScenario, setActiveScenario] = useState(0);
+
+  const scenarios = [
+    {
+      label: 'SDK-based agent frameworks',
+      icon: 'cpu', color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe',
+      who: 'Your AI / Engineering team',
+      question: 'We already have agents built on an agent framework. How does SL plug in?',
+      answer: 'The SL SDK wraps your existing agent — your framework stays unchanged. It signs outbound messages and verifies inbound ones transparently. Your agent logic is untouched.',
+      diagram: [
+        { label: 'Your Agent', sub: 'Your code, unchanged', color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe', icon: 'cpu' },
+        { label: 'AP3 SDK Wrapper', sub: 'Signs every message\nVerifies all inbound', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', icon: 'shield', isSL: true },
+        { label: 'Your Cloud Infra', sub: 'AWS / Azure / GCP\nShard lives here', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: 'db' },
+        { label: 'Counterparty Agent', sub: 'Any A2A-compatible\nagent, any framework', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', icon: 'globe' },
+      ],
+      youDeploy: ['Install AP3 SDK on your agent server', 'Register agent — shard stays in your infra', 'Wrap existing agent with AP3Agent()'],
+      slProvides: ['SDK package (Python / Node)', 'Shard custody in secure enclave', 'Agent registry for counterparty verification'],
+      effort: '1–2 days', tag: 'SDK integration',
+    },
+    {
+      label: 'Platform-managed agents',
+      icon: 'building', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc',
+      who: 'Your IT / Platform team',
+      question: 'We use a managed agent platform. We don\'t control the agent code directly.',
+      answer: 'SL provides a gateway connector that sits between your agent platform and external agents. Deploy it in your cloud VPC — no changes to platform config. All cross-org messages are signed automatically.',
+      diagram: [
+        { label: 'Agent Platform', sub: 'Your existing setup\nNo changes needed', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc', icon: 'cpu' },
+        { label: 'AP3 Gateway Connector', sub: 'Deployed in your VPC\nSigns outbound, verifies inbound', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', icon: 'shield', isSL: true },
+        { label: 'Your Cloud VPC', sub: 'Connector runs here\nYour infra, your control', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: 'db' },
+        { label: 'External Agent', sub: 'Partner / supplier\nagent at their org', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', icon: 'globe' },
+      ],
+      youDeploy: ['Deploy AP3 Gateway Connector in your cloud VPC (Docker / K8s)', 'Route outbound agent API calls through the connector', 'Register your org — shard stays in your VPC'],
+      slProvides: ['AP3 Gateway Connector (containerised)', 'Managed shard custody', 'Connector updates and protocol upgrades'],
+      effort: '3–5 days', tag: 'Gateway deployment',
+    },
+    {
+      label: 'Cross-org data sharing',
+      icon: 'compute', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0',
+      who: 'CTO / Data Platform team at both orgs',
+      question: 'We want to compute jointly with a partner without sharing raw data.',
+      answer: 'Each org deploys an SL Compute Node in their own cloud. The nodes talk directly — SL never sees either party\'s data. Only the result emerges; raw inputs never leave either org.',
+      diagram: [
+        { label: 'Org A Cloud', sub: 'SL Compute Node\nData stays here', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', icon: 'db' },
+        { label: 'SL Compute Node', sub: 'Deployed in Org A VPC\nOrg A owns this', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', icon: 'compute', isSL: true },
+        { label: 'SL Compute Node', sub: 'Deployed in Org B VPC\nOrg B owns this', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', icon: 'compute', isSL: true },
+        { label: 'Org B Cloud', sub: 'SL Compute Node\nData stays here', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: 'db' },
+      ],
+      youDeploy: ['Each org deploys one SL Compute Node in their own cloud VPC', 'Connect nodes via AP3 endpoint', 'Your team configures computation parameters'],
+      slProvides: ['Compute Node binary (AWS / Azure / GCP)', 'Protocol layer — processes only encrypted messages', 'Audit log export for compliance teams'],
+      effort: '1–2 weeks', tag: 'Node deployment',
+    },
+  ];
+
+  const s = scenarios[activeScenario];
+
+  return (
+    <section className="py-20 px-6" style={{background:'#f8f6f2'}}>
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-12">
+          <span className="section-label">Enterprise Deployment</span>
+          <h2 className="text-3xl font-bold mt-3 mb-3" style={{color:'#272b27', letterSpacing:'-0.02em'}}>
+            How your team deploys it
+          </h2>
+          <p className="text-sm max-w-xl mx-auto" style={{color:'#666'}}>
+            Everything runs inside your existing cloud infrastructure. SL never sits between you and your data.
+          </p>
+        </div>
+
+        {/* Scenario tabs */}
+        <div className="flex flex-wrap gap-3 justify-center mb-10">
+          {scenarios.map((sc, i) => (
+            <button key={i} onClick={() => setActiveScenario(i)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{
+                background: activeScenario===i ? sc.bg : '#fff',
+                border: `1px solid ${activeScenario===i ? sc.border : '#e5e0d8'}`,
+                color: activeScenario===i ? sc.color : '#666',
+              }}>
+              <Icon n={sc.icon} size={14} />
+              {sc.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Main card */}
+        <div className="rounded-2xl overflow-hidden" style={{border:'1px solid #e5e0d8', background:'#fff'}}>
+
+          {/* Header */}
+          <div className="px-6 py-5" style={{background:'#faf9f7', borderBottom:'1px solid #e5e0d8'}}>
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="tag-pill" style={{background:s.bg, color:s.color, border:`1px solid ${s.border}`}}>
+                    {s.tag}
+                  </span>
+                  <span className="text-xs" style={{color:'#999'}}>Owner: {s.who}</span>
+                </div>
+                <p className="text-sm italic" style={{color:'#555'}}>"{s.question}"</p>
+              </div>
+              <div className="text-right flex-shrink-0 ml-6">
+                <p className="text-xs mb-1" style={{color:'#aaa'}}>Typical setup time</p>
+                <p className="text-lg font-bold" style={{color:s.color}}>{s.effort}</p>
+              </div>
+            </div>
+            <p className="text-sm mt-3 leading-relaxed" style={{color:'#555'}}>{s.answer}</p>
+          </div>
+
+          {/* Architecture */}
+          <div className="px-6 py-6" style={{background:'#fff'}}>
+            <p className="section-label mb-5">Architecture</p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {s.diagram.map((node, i) => (
+                <React.Fragment key={i}>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-2 ${node.isSL ? 'glow' : ''}`}
+                      style={{background:node.bg, border:`2px solid ${node.isSL ? node.border : node.border}`}}>
+                      <Icon n={node.icon} size={24} style={{color:node.color}} />
+                    </div>
+                    <span className="text-xs font-semibold text-center max-w-24 leading-tight" style={{color:'#272b27'}}>{node.label}</span>
+                    <span className="text-xs text-center max-w-24 leading-tight mt-0.5" style={{color:'#999', whiteSpace:'pre-line'}}>{node.sub}</span>
+                    {node.isSL && (
+                      <span className="tag-pill mt-1.5" style={{background:node.bg, color:node.color, border:`1px solid ${node.border}`}}>
+                        SL
+                      </span>
+                    )}
+                  </div>
+                  {i < s.diagram.length - 1 && (
+                    <div className="flex flex-col items-center pb-6">
+                      <div style={{width:32, height:2, background:'#ddd8d0', position:'relative', overflow:'visible'}}>
+                        <div className="flow-dot" style={{background:s.color, opacity:0.7}} />
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* You deploy vs SL provides */}
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{borderTop:'1px solid #e5e0d8'}}>
+            <div className="px-6 py-5" style={{borderRight:'1px solid #e5e0d8'}}>
+              <p className="text-xs font-bold mb-3 flex items-center gap-2" style={{color:'#555'}}>
+                <span className="w-5 h-5 rounded flex items-center justify-center" style={{background:'#eff6ff'}}>
+                  <Icon n="db" size={11} style={{color:'#2563eb'}} />
+                </span>
+                Your team deploys
+              </p>
+              <div className="space-y-2">
+                {s.youDeploy.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-xs font-bold mt-0.5 w-4 flex-shrink-0" style={{color:'#bbb'}}>{i+1}.</span>
+                    <span className="text-xs leading-relaxed" style={{color:'#444'}}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-xs font-bold mb-3 flex items-center gap-2" style={{color:'#555'}}>
+                <span className="w-5 h-5 rounded flex items-center justify-center" style={{background:'#eef2ff'}}>
+                  <Icon n="shard" size={11} style={{color:'#4f46e5'}} />
+                </span>
+                Silence Laboratories provides
+              </p>
+              <div className="space-y-2">
+                {s.slProvides.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Icon n="check" size={12} style={{color:'#16a34a'}} cls="mt-0.5 flex-shrink-0" />
+                    <span className="text-xs leading-relaxed" style={{color:'#555'}}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Key guarantee */}
+          <div className="px-6 py-4 flex items-center gap-3"
+            style={{background:'#f0fdf4', borderTop:'1px solid #bbf7d0'}}>
+            <Icon n="shield" size={14} style={{color:'#16a34a'}} cls="flex-shrink-0" />
+            <p className="text-xs" style={{color:'#555'}}>
+              <span className="font-semibold" style={{color:'#16a34a'}}>SL never sees your data.</span>{' '}
+              The protocol coordination layer processes only encrypted messages. Raw inputs remain inside your infrastructure at all times.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ── Partners Section ── */
+const Partners = () => (
+  <section className="py-16 px-6" style={{background:'#eae3d7'}}>
+    <div className="max-w-5xl mx-auto">
+      <div className="text-center mb-10">
+        <span className="section-label">Built for the Ecosystem</span>
+        <h2 className="text-2xl font-bold mt-3 mb-2" style={{color:'#272b27', letterSpacing:'-0.01em'}}>
+          Integrates where agents already live
+        </h2>
+        <p className="text-sm" style={{color:'#666'}}>Framework-agnostic. Deploys wherever your agents run.</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { cat: 'Agent Frameworks', items: ['CrewAI','LangChain','Salesforce Agentforce','Microsoft Copilot'] },
+          { cat: 'Data Aggregators', items: ['Setu','Perfios','Plaid','Account Aggregator'] },
+          { cat: 'Cloud Infra', items: ['AWS','Azure','Google Cloud','Oracle Cloud'] },
+          { cat: 'Regulated Industries', items: ['Financial Services','Healthcare','Insurance','Government'] },
+        ].map(g => (
+          <div key={g.cat} className="rounded-xl p-4" style={{background:'#fff', border:'1px solid #e5e0d8'}}>
+            <p className="section-label mb-3">{g.cat}</p>
+            {g.items.map(i => (
+              <div key={i} className="flex items-center gap-2 py-1.5">
+                <div className="w-1 h-1 rounded-full flex-shrink-0" style={{background:'#bbb'}} />
+                <span className="text-xs" style={{color:'#555'}}>{i}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+/* ── CTA ── */
+const CTA = () => (
+  <section className="py-20 px-6" style={{background:'#f8f6f2'}}>
+    <div className="max-w-2xl mx-auto text-center">
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6"
+        style={{background:'#1f54a8'}}>
+        <Icon n="shield" size={28} cls="text-white" />
+      </div>
+      <h2 className="text-3xl font-bold mb-4" style={{color:'#272b27', letterSpacing:'-0.02em'}}>
+        Your agents are making decisions.<br />
+        <span className="gradient-text">Can you prove they're trustworthy?</span>
+      </h2>
+      <p className="mb-8" style={{color:'#666'}}>
+        Regulatory requirements are arriving simultaneously with the agentic shift. The Privacy Stack gives you mathematical proof — not just policy.
+      </p>
+      <div className="flex items-center justify-center gap-4">
+        <button className="btn-primary px-7 py-3 rounded-xl font-semibold">
+          Talk to Us
+        </button>
+        <button className="btn-ghost px-7 py-3 rounded-xl font-semibold">
+          Read the Whitepaper
+        </button>
+      </div>
+    </div>
+  </section>
+);
+
+/* ── Root App ── */
+const App = () => (
+  <div>
+    <Nav />
+    <Hero />
+    <CompareSection />
+    <StackSection />
+    <Integration />
+    <Partners />
+    <CTA />
+    <footer className="py-8 px-6 text-center text-xs" style={{borderTop:'1px solid #e5e0d8', color:'#aaa'}}>
+      © 2025 Silence Laboratories Pte. Ltd. · Singapore ·
+      <a href="#" style={{color:'#888', marginLeft:8, textDecoration:'none'}}>Privacy</a> ·
+      <a href="#" style={{color:'#888', marginLeft:8, textDecoration:'none'}}>Terms</a> ·
+      <a href="#" style={{color:'#888', marginLeft:8, textDecoration:'none'}}>GitHub</a>
+    </footer>
+  </div>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
